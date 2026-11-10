@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Check, Clock, RotateCcw, Share2, Trophy } from "lucide-react";
+import { LEAGUE_NAME } from "@/lib/game/seeds";
 import { shareText, wordsLabel } from "@/lib/game/share";
 import type { FinishInfo, GameResult, LeaderboardEntry } from "@/lib/game/types";
 import { useBomb } from "./BombProvider";
@@ -21,15 +22,16 @@ export function ResultPanel({ result, info, onAgain }: Props) {
   const [copied, setCopied] = useState(false);
   const [friends, setFriends] = useState<LeaderboardEntry[] | null>(null);
   const daily = result.mode === "daily";
+  const league = LEAGUE_NAME[result.mode];
 
   useEffect(() => {
-    if (!repo || !daily) return;
+    if (!repo) return;
     let off = false;
-    void repo.getLeaderboard("friends", today).then((r) => !off && setFriends(r));
+    void repo.getLeaderboard(result.mode, "friends", today).then((r) => !off && setFriends(r));
     return () => {
       off = true;
     };
-  }, [repo, today, daily, result.id]);
+  }, [repo, today, result.mode, result.id]);
 
   async function share() {
     const text = shareText(result, window.location.origin);
@@ -52,17 +54,17 @@ export function ResultPanel({ result, info, onAgain }: Props) {
 
   return (
     <section className="animate-fade-up px-4 pb-10 pt-6 text-center" data-testid="result" data-mode={result.mode}>
-      <p className="label">{daily ? `Bomba #${result.number} · kraj partije` : "Trening · kraj partije"}</p>
+      <p className="label">{daily ? `${league} #${result.number} · kraj partije` : `${league} · kraj partije`}</p>
       <p className="mt-2 text-6xl font-extrabold tabular-nums text-ink" data-testid="final-score">
         {result.score}
       </p>
       <p className="label mt-1">bodova</p>
 
-      {daily && info && (
+      {info && (
         <div className="mt-3 flex min-h-[28px] justify-center" data-testid="best-info">
           {info.allTimeBest && info.result.score > 0 ? (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-signal-tint px-3 py-1 text-sm font-semibold text-signal-dark" data-testid="badge-highscore">
-              <Trophy size={15} aria-hidden /> Novi high score!
+              <Trophy size={15} aria-hidden /> {daily ? "Novi high score!" : "Novi high score u trening ligi!"}
             </span>
           ) : info.dayBest && info.result.score > 0 ? (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-signal-tint px-3 py-1 text-sm font-semibold text-signal-dark" data-testid="badge-daybest">
@@ -104,29 +106,22 @@ export function ResultPanel({ result, info, onAgain }: Props) {
         <button className="btn-primary btn-lg w-full" onClick={onAgain} data-testid="again">
           <RotateCcw size={18} aria-hidden /> Igraj ponovno
         </button>
-        {daily ? (
-          <div className="grid grid-cols-2 gap-2">
-            <button className="btn-ghost" onClick={share} data-testid="share">
-              {copied ? <Check size={18} aria-hidden /> : <Share2 size={18} aria-hidden />}
-              {copied ? "Kopirano" : "Podijeli"}
-            </button>
-            <Link href="/ljestvica" className="btn-ghost" data-testid="view-leaderboard">
-              <Trophy size={18} aria-hidden /> Ljestvica
-            </Link>
-          </div>
-        ) : (
-          <Link href="/" className="btn-ghost">
-            Početna
+        <div className="grid grid-cols-2 gap-2">
+          <button className="btn-ghost" onClick={share} data-testid="share">
+            {copied ? <Check size={18} aria-hidden /> : <Share2 size={18} aria-hidden />}
+            {copied ? "Kopirano" : "Podijeli"}
+          </button>
+          <Link href={daily ? "/ljestvica" : "/ljestvica?liga=trening"} className="btn-ghost" data-testid="view-leaderboard">
+            <Trophy size={18} aria-hidden /> Ljestvica
           </Link>
-        )}
+        </div>
       </div>
 
-      {daily && (
-        <div className="mt-6 text-left">
-          <h2 className="label mb-2">Prijatelji danas (najbolji rezultat)</h2>
+      <div className="mt-6 text-left">
+          <h2 className="label mb-2">{daily ? "Prijatelji danas (najbolji rezultat)" : "Prijatelji u trening ligi (high score)"}</h2>
           {friends === null ? null : friends.length <= 1 ? (
             <p className="tile px-4 py-4 text-sm text-muted">
-              Još nema prijatelja s današnjim rezultatom.{" "}
+              {daily ? "Još nema prijatelja s današnjim rezultatom." : "Još nema prijatelja s rezultatom u trening ligi."}{" "}
               <Link href="/prijatelji" className="font-semibold text-ink underline underline-offset-2">
                 Dodaj prijatelje
               </Link>
@@ -135,8 +130,7 @@ export function ResultPanel({ result, info, onAgain }: Props) {
           ) : (
             <LeaderboardTable rows={friends} limit={5} />
           )}
-        </div>
-      )}
+      </div>
 
       {daily && (
         <p className="mt-6 flex items-center justify-center gap-1.5 text-sm text-muted">

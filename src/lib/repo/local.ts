@@ -1,12 +1,14 @@
 import { AVATAR_KEYS } from "../avatars";
+import type { Mode } from "../game/constants";
 import type { Dictionary } from "../dict/dictionary";
 import { loadDictionary } from "../dict/loader";
-import { challengeNumber, dailySeed, LAUNCH_DATE } from "../game/dates";
+import { challengeNumber, LAUNCH_DATE } from "../game/dates";
 import { checkElapsed, replayLog } from "../game/replay";
+import { gameSeed } from "../game/seeds";
 import { better, bestOf } from "../game/results";
 import type { AvatarSpec, FinishInfo, FriendEntry, GameResult, Ghost, LeaderboardEntry, LeaderboardScope, LogEntry, Profile, Result } from "../game/types";
 import { DEFAULT_FRIENDS, MOCK_USERS, mockDay, mockRange, rangeFor } from "./mock-community";
-import type { BombRepository, DailyStatus } from "./types";
+import type { BombRepository, LeagueStatus, StartedGame } from "./types";
 
 const STORAGE_KEY = "bomba:v1";
 export const USERNAME_RE = /^[a-z0-9_]{3,16}$/;
@@ -15,8 +17,8 @@ interface Stored {
   profile: Profile | null;
   /** Sve završene partije (koliko god ih bilo). */
   games: GameResult[];
-  /** Početak nezavršene partije po danu (ms). */
-  playing: Record<string, number>;
+  /** Nezavršena partija po ligi: dnevna po danu ("daily:YYYY-MM-DD"), trening samo jedna ("training"). */
+  playing: Record<string, { startedAt: number; gameId: string }>;
   friends: string[];
 }
 
@@ -42,6 +44,8 @@ function createStorage() {
   };
 }
 
+const playKey = (mode: Mode, date: string) => (mode === "daily" ? `daily:${date}` : "training");
+
 const uuid = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -56,15 +60,16 @@ export class LocalRepository implements BombRepository {
     const raw = this.storage.read();
     if (raw) {
       try {
-        const p = JSON.parse(raw) as Partial<Stored> & { results?: Record<string, GameResult>; started?: Record<string, number> };
-        // starija inačica (jedna partija po danu): preuzmi rezultate
+        const p = JSON.parse(raw) as Partial<Stored> & { results?: Record<string, GameResult> };
+        // starije inačice: jedna partija po danu; partije bez lige su dnevne; nezavršena partija bila je samo broj (ms)
         const legacy = p.results ? Object.values(p.results).map((r) => ({ ...r, id: r.id ?? uuid() })) : [];
-        return {
-          profile: p.profile ?? null,
-          games: p.games ?? legacy,
-          playing: p.playing ?? {},
-          friends: p.friends ?? [...DEFAULT_FRIENDS],
-        };
+        const games = (p.games ?? legacy).map((g) => ({ ...g, mode: (g.mode ?? "daily") as Mode }));
+        const playing: Stored["playing"] = {};
+        for (const [k, v] of Object.entries(p.playing ?? {})) {
+          if (typeof v === "number") playing[k.includes(":") || k === "training" ? k : `daily:${k}`] = { startedAt: v, gameId: uuid() };
+          else playing[k] = v;
+        }
+        return { profile: p.profile ?? null, games, playing, friends: p.friends ?? [...DEFAULT_FRIENDS] };
       } catch {
         /* oštećeno: kreni ispočetka */
       }
@@ -102,36 +107,51 @@ export class LocalRepository implements BombRepository {
     return { ok: true, value: profile };
   }
 
-  async getDaily(date: string): Promise<DailyStatus> {
+  async getStatus(mode: Mode, date: string): Promise<LeagueStatus> {
     const s = this.load();
-    const today = s.games.filter((g) => g.date === date);
-    return { date, number: challengeNumber(date), playing: Boolean(s.playing[date]), startedAt: s.playing[date], best: bestOf(today), gamesToday: today.length };
+    const today = s.games.filter((g) => g.mode === mode && g.date === date);
+    const playing = s.playing[playKey(mode, date)];
+    return {
+      mode,
+      date,
+      number: challengeNumber(date),
+      playing: Boolean(playing),
+      startedAt: playing?.startedAt,
+      gameId: playing?.gameId,
+      best: bestOf(today),
+      gamesToday: today.length,
+    };
   }
 
-  async startDaily(date: string, resume: boolean) {
+  async startGame(mode: Mode, date: string, resume: boolean): Promise<Result<StartedGame>> {
     const s = this.load();
-    if (resume && s.playing[date]) return { ok: true as const, value: { startedAt: s.playing[date], resumed: true } };
-    const startedAt = Date.now();
-    this.save({ ...s, playing: { ...s.playing, [date]: startedAt } });
-    return { ok: true as const, value: { startedAt, resumed: false } };
+    const key = playKey(mode, date);
+    const current = s.playing[key];
+    if (resume && current) return { ok: true, value: { startedAt: current.startedAt, resumed: true, gameId: current.gameId } };
+    // gameId dodjeljuje „server" (ovdje lokalni repozitorij). Trening: iz njega proizlazi niz slogova.
+    const next = { startedAt: Date.now(), gameId: uuid() };
+    this.save({ ...s, playing: { ...s.playing, [key]: next } });
+    return { ok: true, value: { startedAt: next.startedAt, resumed: false, gameId: next.gameId } };
   }
 
   /** Ovdje lokalni „server": isti replay i iste provjere kao API ruta u Supabase načinu. */
-  async finishDaily(date: string, log: LogEntry[]): Promise<Result<FinishInfo>> {
+  async finishGame(mode: Mode, date: string, gameId: string, log: LogEntry[]): Promise<Result<FinishInfo>> {
     const s = this.load();
-    const startedAt = s.playing[date];
-    if (!startedAt) return { ok: false, error: "Nema aktivne partije." };
+    const key = playKey(mode, date);
+    const current = s.playing[key];
+    if (!current || current.gameId !== gameId) return { ok: false, error: "Nema aktivne partije." };
     const dict = await this.dictLoader();
-    const rep = replayLog(dailySeed(date), log, dict);
+    const rep = replayLog(gameSeed(mode, date, gameId), log, dict);
     if (!rep.ok) return rep;
-    const elapsed = checkElapsed(rep.value.summary.durationMs, startedAt, Date.now());
+    const elapsed = checkElapsed(rep.value.summary.durationMs, current.startedAt, Date.now());
     if (!elapsed.ok) return elapsed;
 
-    const result: GameResult = { ...rep.value.summary, id: uuid(), mode: "daily", date, number: challengeNumber(date), finishedAt: new Date().toISOString() };
-    const todayBefore = s.games.filter((g) => g.date === date);
+    const result: GameResult = { ...rep.value.summary, id: gameId, mode, date, number: challengeNumber(date), finishedAt: new Date().toISOString() };
+    const league = s.games.filter((g) => g.mode === mode);
+    const todayBefore = league.filter((g) => g.date === date);
     const bestBefore = bestOf(todayBefore);
-    const allBefore = bestOf(s.games);
-    const { [date]: _done, ...playing } = s.playing;
+    const allBefore = bestOf(league);
+    const { [key]: _done, ...playing } = s.playing;
     this.save({ ...s, games: [...s.games, result], playing });
     return {
       ok: true,
@@ -158,6 +178,7 @@ export class LocalRepository implements BombRepository {
       todayWords: today?.words ?? null,
       todayScore: today?.score ?? null,
       bestScore: mockRange(u, LAUNCH_DATE, date).score,
+      trainingBest: mockRange(u, LAUNCH_DATE, date, "training").score,
       simulated: true,
     };
   }
@@ -175,7 +196,7 @@ export class LocalRepository implements BombRepository {
     if (!name) return { ok: false, error: "Upiši korisničko ime." };
     if (s.profile?.username === name) return { ok: false, error: "To si ti!" };
     const u = MOCK_USERS.find((x) => x.username === name);
-    if (!u) return { ok: false, error: `Nema igrača „${name}".` };
+    if (!u) return { ok: false, error: `Nema igrača „${name}". U demo načinu postoje samo simulirani igrači (npr. ivan, marija, luka); prave prijatelje možeš dodavati kad je aplikacija spojena na Supabase.` };
     if (s.friends.includes(name)) return { ok: false, error: `${name} ti je već prijatelj.` };
     this.save({ ...s, friends: [...s.friends, name] });
     return { ok: true, value: this.friendEntry(u, date) };
@@ -187,41 +208,36 @@ export class LocalRepository implements BombRepository {
     this.save({ ...s, friends: s.friends.filter((f) => f !== name) });
   }
 
-  async getGhosts(date: string): Promise<Ghost[]> {
+  async getGhosts(mode: Mode, date: string): Promise<Ghost[]> {
     const out: Ghost[] = [];
-    for (const f of await this.listFriends(date)) {
-      if (f.todayWords !== null && f.todayScore !== null) {
-        out.push({ userId: f.userId, username: f.username, avatar: f.avatar, words: f.todayWords, score: f.todayScore, simulated: true });
-      }
+    const s = this.load();
+    for (const n of s.friends) {
+      const u = MOCK_USERS.find((x) => x.username === n);
+      if (!u) continue;
+      // dnevna: najbolja današnja partija; trening: najbolja trening partija svih vremena (nizovi se razlikuju)
+      const r = mode === "daily" ? mockDay(u, date) : mockRange(u, LAUNCH_DATE, date, "training");
+      const played = mode === "daily" ? Boolean(r) : (r as ReturnType<typeof mockRange>).played > 0;
+      if (r && played) out.push({ userId: u.id, username: u.username, avatar: u.avatar, words: r.words, score: r.score, simulated: true });
     }
     return out.sort((a, b) => a.words - b.words);
   }
 
-  async getLeaderboard(scope: LeaderboardScope, date: string): Promise<LeaderboardEntry[]> {
+  async getLeaderboard(mode: Mode, scope: LeaderboardScope, date: string): Promise<LeaderboardEntry[]> {
     const s = this.load();
     const me = s.profile;
     const rows: Array<Omit<LeaderboardEntry, "rank">> = [];
+    const mine = s.games.filter((g) => g.mode === mode);
+    const myBest = (from: string, to: string) => bestOf(mine.filter((g) => g.date >= from && g.date <= to));
 
-    const myBest = (from: string, to: string) => bestOf(s.games.filter((g) => g.date >= from && g.date <= to));
-
-    if (scope === "friends") {
-      for (const n of s.friends) {
-        const u = MOCK_USERS.find((x) => x.username === n);
-        const d = u && mockDay(u, date);
-        if (u && d) rows.push({ userId: u.id, username: u.username, avatar: u.avatar, points: d.score, words: d.words, isMe: false, simulated: true });
-      }
-      const mine = myBest(date, date);
-      if (me && mine) rows.push({ userId: me.id, username: me.username, avatar: me.avatar, points: mine.score, words: mine.words, isMe: true });
-    } else {
-      // Danas / ovaj tjedan / ukupno: NAJBOLJI pojedinačni rezultat (high score) u tom razdoblju.
-      const [from, to] = rangeFor(scope, date);
-      for (const u of MOCK_USERS) {
-        const r = mockRange(u, from, to);
-        if (r.played > 0) rows.push({ userId: u.id, username: u.username, avatar: u.avatar, points: r.score, words: r.words, isMe: false, simulated: true });
-      }
-      const mine = myBest(from, to);
-      if (me && mine) rows.push({ userId: me.id, username: me.username, avatar: me.avatar, points: mine.score, words: mine.words, isMe: true });
+    // Prijatelji: dnevna liga = današnji najbolji; trening liga = high score svih vremena (nema „današnjeg niza").
+    const [from, to] = scope === "friends" ? (mode === "daily" ? rangeFor("daily", date) : rangeFor("all", date)) : rangeFor(scope, date);
+    const pool = scope === "friends" ? MOCK_USERS.filter((u) => s.friends.includes(u.username)) : MOCK_USERS;
+    for (const u of pool) {
+      const r = mockRange(u, from, to, mode);
+      if (r.played > 0) rows.push({ userId: u.id, username: u.username, avatar: u.avatar, points: r.score, words: r.words, isMe: false, simulated: true });
     }
+    const best = myBest(from, to);
+    if (me && best) rows.push({ userId: me.id, username: me.username, avatar: me.avatar, points: best.score, words: best.words, isMe: true });
 
     rows.sort((a, b) => b.points - a.points || b.words - a.words || a.username.localeCompare(b.username));
     let rank = 0;
@@ -234,4 +250,3 @@ export class LocalRepository implements BombRepository {
     });
   }
 }
-

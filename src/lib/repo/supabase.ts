@@ -2,7 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { createBrowser } from "../supabase/browser";
 import { challengeNumber } from "../game/dates";
 import type { AvatarSpec, FinishInfo, FriendEntry, GameResult, Ghost, LeaderboardEntry, LeaderboardScope, LogEntry, Profile, Result } from "../game/types";
-import type { BombRepository, DailyStatus } from "./types";
+import type { Mode } from "../game/constants";
+import type { BombRepository, LeagueStatus, StartedGame } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const USERNAME_RE = /^[a-z0-9_]{3,16}$/;
@@ -79,20 +80,20 @@ export class SupabaseRepository implements BombRepository {
     return { ok: true, value: (await this.ensureProfile())! };
   }
 
-  async getDaily(date: string): Promise<DailyStatus> {
-    const r = await this.api<DailyStatus>(`/api/igra/stanje?date=${encodeURIComponent(date)}`);
-    if (!r.ok) return { date, number: challengeNumber(date), playing: false, best: null, gamesToday: 0 };
+  async getStatus(mode: Mode, date: string): Promise<LeagueStatus> {
+    const r = await this.api<LeagueStatus>(`/api/igra/stanje?date=${encodeURIComponent(date)}&mode=${mode}`);
+    if (!r.ok) return { mode, date, number: challengeNumber(date), playing: false, best: null, gamesToday: 0 };
     return r.body;
   }
 
-  async startDaily(_date: string, resume: boolean) {
-    const r = await this.api<{ startedAt: number; resumed: boolean; error?: string }>("/api/igra/start", { method: "POST", body: JSON.stringify({ resume }) });
-    if (!r.ok) return { ok: false as const, error: r.body?.error ?? "Partija se nije mogla započeti." };
-    return { ok: true as const, value: { startedAt: r.body.startedAt, resumed: r.body.resumed } };
+  async startGame(mode: Mode, _date: string, resume: boolean): Promise<Result<StartedGame>> {
+    const r = await this.api<StartedGame & { error?: string }>("/api/igra/start", { method: "POST", body: JSON.stringify({ mode, resume }) });
+    if (!r.ok) return { ok: false, error: r.body?.error ?? "Partija se nije mogla započeti." };
+    return { ok: true, value: { startedAt: r.body.startedAt, resumed: r.body.resumed, gameId: r.body.gameId } };
   }
 
-  async finishDaily(date: string, log: LogEntry[]): Promise<Result<FinishInfo>> {
-    const r = await this.api<FinishInfo & { error?: string }>("/api/igra/kraj", { method: "POST", body: JSON.stringify({ date, log }) });
+  async finishGame(mode: Mode, date: string, gameId: string, log: LogEntry[]): Promise<Result<FinishInfo>> {
+    const r = await this.api<FinishInfo & { error?: string }>("/api/igra/kraj", { method: "POST", body: JSON.stringify({ mode, date, gameId, log }) });
     if (!r.ok || !r.body?.result) return { ok: false, error: r.body?.error ?? "Rezultat se nije mogao spremiti." };
     return { ok: true, value: r.body };
   }
@@ -100,13 +101,13 @@ export class SupabaseRepository implements BombRepository {
   async listResults(): Promise<GameResult[]> {
     const { data, error } = await this.client
       .from("games")
-      .select("id, challenge_date, challenge_number, score, words, max_combo, longest, word_list, booms, duration_ms, finished_at")
+      .select("id, mode, challenge_date, challenge_number, score, words, max_combo, longest, word_list, booms, duration_ms, finished_at")
       .eq("status", "finished")
       .order("finished_at", { ascending: false });
     if (error) throw new Error(error.message);
     return (data ?? []).map((g: any) => ({
       id: g.id,
-      mode: "daily" as const,
+      mode: (g.mode ?? "daily") as Mode,
       date: g.challenge_date,
       number: g.challenge_number,
       score: g.score,
@@ -129,6 +130,7 @@ export class SupabaseRepository implements BombRepository {
       todayWords: r.today_words ?? null,
       todayScore: r.today_points ?? null,
       bestScore: Number(r.best_points),
+      trainingBest: Number(r.training_best ?? 0),
     }));
   }
 
@@ -137,7 +139,7 @@ export class SupabaseRepository implements BombRepository {
       const rows = await this.rpc<any[]>("add_friend", { p_username: username.replace(/^@/, "") });
       const friends = await this.listFriends(date);
       const f = friends.find((x) => x.userId === rows[0].user_id);
-      return { ok: true, value: f ?? { userId: rows[0].user_id, username: rows[0].username, avatar: { color: rows[0].avatar_color }, todayWords: null, todayScore: null, bestScore: 0 } };
+      return { ok: true, value: f ?? { userId: rows[0].user_id, username: rows[0].username, avatar: { color: rows[0].avatar_color }, todayWords: null, todayScore: null, bestScore: 0, trainingBest: 0 } };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : "Prijatelj se nije mogao dodati." };
     }
@@ -147,13 +149,13 @@ export class SupabaseRepository implements BombRepository {
     await this.rpc("remove_friend", { p_friend: userId });
   }
 
-  async getGhosts(date: string): Promise<Ghost[]> {
-    const rows = await this.rpc<any[]>("friends_today", { p_date: date });
+  async getGhosts(mode: Mode, date: string): Promise<Ghost[]> {
+    const rows = await this.rpc<any[]>("friends_ghosts", { p_date: date, p_mode: mode });
     return (rows ?? []).map((r) => ({ userId: r.user_id, username: r.username, avatar: { color: r.avatar_color }, words: r.words, score: r.points }));
   }
 
-  async getLeaderboard(scope: LeaderboardScope, date: string): Promise<LeaderboardEntry[]> {
-    const [rows, me] = await Promise.all([this.rpc<any[]>("leaderboard", { p_scope: scope, p_date: date }), this.client.auth.getUser()]);
+  async getLeaderboard(mode: Mode, scope: LeaderboardScope, date: string): Promise<LeaderboardEntry[]> {
+    const [rows, me] = await Promise.all([this.rpc<any[]>("leaderboard", { p_scope: scope, p_date: date, p_mode: mode }), this.client.auth.getUser()]);
     return (rows ?? []).map((r) => ({
       rank: Number(r.rank),
       userId: r.user_id,

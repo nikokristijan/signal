@@ -1,8 +1,9 @@
 import type { GameResult } from "./types";
 
 /** Tekst za dijeljenje (bez spoilera: samo brojke i najduža riječ). */
-export function shareText(r: Pick<GameResult, "number" | "words" | "score" | "maxCombo" | "longest">, url?: string): string {
-  const lines = [`💣 Bomba #${r.number} · ${r.words} ${wordsLabel(r.words)} · ${r.score} bodova`];
+export function shareText(r: Pick<GameResult, "number" | "words" | "score" | "maxCombo" | "longest"> & { mode?: "daily" | "training" }, url?: string): string {
+  const title = r.mode === "training" ? "💣 Bomba · trening" : `💣 Bomba #${r.number}`;
+  const lines = [`${title} · ${r.words} ${wordsLabel(r.words)} · ${r.score} bodova`];
   const extra = [r.maxCombo > 0 ? `🔥 combo ×${r.maxCombo}` : "", r.longest ? `najduža: „${r.longest}"` : ""].filter(Boolean);
   if (extra.length) lines.push(extra.join(" · "));
   if (url) lines.push(url);

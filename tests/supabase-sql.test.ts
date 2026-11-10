@@ -38,8 +38,8 @@ async function newUser(name: string, username?: string) {
 }
 
 /** Odigra (i završi) jednu partiju: server upisuje rezultat. Vraća id partije. */
-async function play(user: string, date: string, score: number, words: number, combo = 3): Promise<string> {
-  const [g] = await q<{ id: string }>("insert into public.games (user_id, challenge_date, challenge_number) values ($1, $2, 1) returning id", [ids[user], date]);
+async function play(user: string, date: string, score: number, words: number, combo = 3, mode: "daily" | "training" = "daily"): Promise<string> {
+  const [g] = await q<{ id: string }>("insert into public.games (user_id, challenge_date, challenge_number, mode) values ($1, $2, 1, $3) returning id", [ids[user], date, mode]);
   await as(
     null,
     () => db.query("select public.bomba_record_result($1, $2, $3, $4, 'riječ', array['riječ'], 2, 20000, '[]'::jsonb, $5)", [g.id, score, words, combo, `hash-${g.id}`]),
@@ -221,12 +221,80 @@ describe("ljestvice: gleda se NAJBOLJI rezultat (high score), ne zbroj", () => {
   });
 });
 
+describe("lige: dnevna i trening (migracija 0003)", () => {
+  beforeAll(async () => {
+    for (const n of ["lig1", "lig2", "lig3"]) await newUser(n);
+    // 2026-11-12: dnevna i trening partije; trening ima viši rezultat samo kod lig1
+    await play("lig1", "2026-11-12", 300, 20, 3, "daily");
+    await play("lig1", "2026-11-12", 900, 50, 3, "training");
+    await play("lig1", "2026-11-12", 400, 25, 3, "training");
+    await play("lig2", "2026-11-12", 700, 40, 3, "daily");
+    await play("lig2", "2026-11-12", 100, 8, 3, "training");
+    await play("lig3", "2026-11-12", 500, 30, 3, "training"); // samo trening
+  });
+  const lb = (uid: string, mode: string, scope: string) =>
+    as(uid, () => q<{ username: string; points: string; words: string }>("select * from public.leaderboard($1, '2026-11-12', $2)", [scope, mode]));
+  const nameOf = async (k: string) => (await q<{ username: string }>("select username from public.profiles where id = $1", [ids[k]]))[0].username;
+
+  it("partije i rezultati imaju ligu; zadano je dnevna", async () => {
+    const rows = await q<{ mode: string }>("select distinct mode from public.scores order by mode");
+    expect(rows.map((r) => r.mode)).toEqual(["daily", "training"]);
+    expect((await q<{ mode: string }>("select mode from public.games where user_id = $1 order by started_at limit 1", [ids.ana]))[0].mode).toBe("daily");
+  });
+  it("ligama se ne miješaju rezultati: dnevna ljestvica nema trening partija i obrnuto", async () => {
+    const daily = await lb("lig1", "daily", "daily");
+    const training = await lb("lig1", "training", "daily");
+    expect(daily.map((r) => Number(r.points))).toEqual([700, 300]); // lig2, lig1
+    expect(training.map((r) => Number(r.points))).toEqual([900, 500, 100]); // lig1 (najbolja od 2), lig3, lig2
+  });
+  it("trening liga: svaka ljestvica je najbolja partija; tjedna i ukupna također", async () => {
+    const name1 = await nameOf("lig1");
+    for (const scope of ["weekly", "all"]) {
+      const rows = await lb("lig1", "training", scope);
+      const mine = rows.find((r) => r.username === name1);
+      expect(Number(mine?.points), scope).toBe(900); // najbolja partija, ne 900 + 400
+    }
+  });
+  it("trening liga ne mijenja niz dana, dnevna ga mijenja", async () => {
+    const s3 = await q("select * from public.streaks where user_id = $1", [ids.lig3]);
+    expect(s3).toHaveLength(0); // lig3 je igrao samo trening
+    const s2 = await q<{ current_streak: number }>("select * from public.streaks where user_id = $1", [ids.lig2]);
+    expect(s2[0].current_streak).toBe(1);
+  });
+  it("prijatelji: dnevna = današnji najbolji, trening = high score svih vremena; duhovi i lista prijatelja po ligi", async () => {
+    const [n2, n3] = [await nameOf("lig2"), await nameOf("lig3")];
+    await as("lig1", () => db.query("select * from public.add_friend($1)", [n2]));
+    await as("lig1", () => db.query("select * from public.add_friend($1)", [n3]));
+    // dnevna: samo lig2 je danas igrao dnevnu ligu
+    expect((await lb("lig1", "daily", "friends")).map((r) => Number(r.points)).sort((a, b) => a - b)).toEqual([300, 700]);
+    // trening: lig1 (900), lig3 (500), lig2 (100)
+    expect((await lb("lig1", "training", "friends")).map((r) => Number(r.points)).sort((a, b) => a - b)).toEqual([100, 500, 900]);
+    const gd = await as("lig1", () => q<{ words: number }>("select * from public.friends_ghosts('2026-11-12', 'daily')"));
+    expect(gd.map((g) => g.words)).toEqual([40]); // samo lig2 ima dnevnu partiju
+    const gt = await as("lig1", () => q<{ words: number }>("select * from public.friends_ghosts('2026-11-12', 'training')"));
+    expect(gt.map((g) => g.words)).toEqual([8, 30]); // lig2 (8) i lig3 (30), poredano po riječima
+    const list = await as("lig1", () => q<{ username: string; today_points: number | null; best_points: number; training_best: number }>("select * from public.list_friends('2026-11-12')"));
+    const l2 = list.find((r) => r.username === n2)!;
+    const l3 = list.find((r) => r.username === n3)!;
+    expect(l2).toMatchObject({ today_points: 700, best_points: 700, training_best: 100 });
+    expect(l3).toMatchObject({ today_points: null, best_points: 0, training_best: 500 }); // lig3 nije igrao dnevnu ligu
+    await as("lig1", () => db.query("select public.remove_friend($1)", [ids.lig2]));
+    await as("lig1", () => db.query("select public.remove_friend($1)", [ids.lig3]));
+  });
+  it("neprijavljeni ne smije zvati nove funkcije; pogrešna liga nema rezultata", async () => {
+    await expect(as(null, () => db.query("select * from public.leaderboard('all', '2026-11-12', 'training')"), "anon")).rejects.toThrow(/permission denied/i);
+    await expect(as(null, () => db.query("select * from public.friends_ghosts('2026-11-12', 'training')"), "anon")).rejects.toThrow(/permission denied/i);
+    expect(await lb("lig1", "nepoznata", "all")).toHaveLength(0);
+    await expect(db.query("insert into public.games (user_id, challenge_date, challenge_number, mode) values ($1, '2026-11-12', 1, 'turnir')", [ids.lig1])).rejects.toThrow(/check/i);
+  });
+});
+
 describe("prijatelji", () => {
   it("add_friend je obostran; „duhovi“ i lista prijatelja daju današnje rezultate", async () => {
-    const ghosts = await as("ana", () => q<{ username: string; words: number; points: number }>("select * from public.friends_today('2026-11-10')"));
+    const ghosts = await as("ana", () => q<{ username: string; words: number; points: number }>("select * from public.friends_ghosts('2026-11-10')"));
     expect(ghosts).toHaveLength(1);
     expect(ghosts[0]).toMatchObject({ words: 40, points: 800 }); // najbolja današnja partija prijatelja
-    const back = await as("ivo", () => q<{ username: string }>("select * from public.friends_today('2026-11-10')"));
+    const back = await as("ivo", () => q<{ username: string }>("select * from public.friends_ghosts('2026-11-10')"));
     expect(back[0].username).toBe("ana_h"); // obostrano
     const list = await as("ana", () => q<{ today_points: number; best_points: number }>("select * from public.list_friends('2026-11-10')"));
     expect(list[0].today_points).toBe(800);

@@ -1,5 +1,6 @@
 import "server-only";
 import { NextResponse } from "next/server";
+import type { Mode } from "./game/constants";
 import { challengeNumber } from "./game/dates";
 import type { FinishInfo, GameResult } from "./game/types";
 import { createAdminClient, createUserClient } from "./supabase/server";
@@ -22,10 +23,11 @@ export async function currentUserId(): Promise<string | null> {
 
 /** Stupci partije bez `log` (zapis je velik i ne treba za ove upite). */
 export const GAME_COLS =
-  "id, challenge_date, challenge_number, status, started_at, finished_at, attempts, attempt_no, score, words, max_combo, longest, word_list, booms, duration_ms, log_hash";
+  "id, mode, challenge_date, challenge_number, status, started_at, finished_at, attempts, attempt_no, score, words, max_combo, longest, word_list, booms, duration_ms, log_hash";
 
 export interface GameRow {
   id: string;
+  mode: Mode;
   challenge_date: string;
   challenge_number: number;
   status: "playing" | "finished" | "abandoned";
@@ -46,7 +48,7 @@ export interface GameRow {
 export function rowToResult(r: GameRow): GameResult {
   return {
     id: r.id,
-    mode: "daily",
+    mode: r.mode ?? "daily",
     date: r.challenge_date,
     number: r.challenge_number ?? challengeNumber(r.challenge_date),
     score: r.score ?? 0,
@@ -60,10 +62,23 @@ export function rowToResult(r: GameRow): GameResult {
   };
 }
 
-/** Sve partije igrača za taj dan (najviše MAX_GAMES_PER_DAY). */
-export async function gamesFor(userId: string, date: string): Promise<GameRow[]> {
-  const { data } = await createAdminClient().from("games").select(GAME_COLS).eq("user_id", userId).eq("challenge_date", date);
+/** Sve partije igrača u ligi za taj dan (najviše MAX_GAMES_PER_DAY). */
+export async function gamesFor(userId: string, mode: Mode, date: string): Promise<GameRow[]> {
+  const { data } = await createAdminClient().from("games").select(GAME_COLS).eq("user_id", userId).eq("mode", mode).eq("challenge_date", date);
   return (data as GameRow[] | null) ?? [];
+}
+
+/** Nezavršene partije u ligi: dnevna je vezana uz datum, trening ne (partija može prijeći ponoć). */
+export async function playingFor(userId: string, mode: Mode, date: string): Promise<GameRow[]> {
+  const q = createAdminClient().from("games").select(GAME_COLS).eq("user_id", userId).eq("mode", mode).eq("status", "playing");
+  const { data } = await (mode === "daily" ? q.eq("challenge_date", date) : q);
+  return (data as GameRow[] | null) ?? [];
+}
+
+/** Jedna partija po ID-u, samo ako pripada igraču. */
+export async function gameById(userId: string, gameId: string): Promise<GameRow | null> {
+  const { data } = await createAdminClient().from("games").select(GAME_COLS).eq("id", gameId).eq("user_id", userId);
+  return ((data as GameRow[] | null) ?? [])[0] ?? null;
 }
 
 export const finishedRows = (rows: GameRow[]) => rows.filter((r) => r.status === "finished");
@@ -87,17 +102,17 @@ export function bestRow(rows: GameRow[]): GameRow | null {
   return best;
 }
 
-/** Sve ZAVRŠENE partije igrača osim jedne (za usporedbu najboljeg rezultata). */
-async function otherFinished(userId: string, exceptId: string): Promise<GameRow[]> {
-  const { data } = await createAdminClient().from("games").select(GAME_COLS).eq("user_id", userId).eq("status", "finished");
+/** Sve ZAVRŠENE partije igrača u ligi osim jedne (za usporedbu najboljeg rezultata). */
+async function otherFinished(userId: string, mode: Mode, exceptId: string): Promise<GameRow[]> {
+  const { data } = await createAdminClient().from("games").select(GAME_COLS).eq("user_id", userId).eq("mode", mode).eq("status", "finished");
   return ((data as GameRow[] | null) ?? []).filter((r) => r.id !== exceptId);
 }
 
-/** Što igrač treba znati odmah nakon partije: je li to novi najbolji rezultat danas / svih vremena. */
-export async function finishInfo(userId: string, date: string, game: GameRow): Promise<FinishInfo> {
-  const others = await otherFinished(userId, game.id);
+/** Što igrač treba znati odmah nakon partije: je li to novi najbolji rezultat danas / svih vremena (u toj ligi). */
+export async function finishInfo(userId: string, game: GameRow): Promise<FinishInfo> {
+  const others = await otherFinished(userId, game.mode, game.id);
   const bestAll = bestRow(others);
-  const todayOthers = others.filter((r) => r.challenge_date === date);
+  const todayOthers = others.filter((r) => r.challenge_date === game.challenge_date);
   const bestDay = bestRow(todayOthers);
   return {
     result: rowToResult(game),

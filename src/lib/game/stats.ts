@@ -1,4 +1,5 @@
 import { addDays } from "./dates";
+import type { Mode } from "./constants";
 import type { GameResult } from "./types";
 
 export interface Stats {
@@ -34,12 +35,16 @@ export function computeStreaks(dates: readonly string[], today: string): { curre
   return { current, longest: Math.max(longest, current) };
 }
 
-export function computeStats(results: readonly GameResult[], today: string): Stats {
-  const daily = results.filter((r) => r.mode === "daily");
-  const { current, longest } = computeStreaks(
-    daily.map((r) => r.date),
-    today,
-  );
+/** Statistika jedne lige. Niz dana ima smisla samo za dnevnu ligu (trening ga ne mijenja). */
+export function computeStats(results: readonly GameResult[], today: string, mode: Mode = "daily"): Stats {
+  const daily = results.filter((r) => r.mode === mode);
+  const { current, longest } =
+    mode === "daily"
+      ? computeStreaks(
+          daily.map((r) => r.date),
+          today,
+        )
+      : { current: 0, longest: 0 };
   const totalScore = daily.reduce((s, r) => s + r.score, 0);
   return {
     played: daily.length,

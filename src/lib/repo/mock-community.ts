@@ -70,22 +70,25 @@ export interface MockDay {
 }
 
 /** Što je simulirani igrač postigao na dan `dateKey`, ili null ako nije igrao. */
-export function mockDay(user: MockUser, dateKey: string): MockDay | null {
+export function mockDay(user: MockUser, dateKey: string, league: "daily" | "training" = "daily"): MockDay | null {
   if (daysBetween(LAUNCH_DATE, dateKey) < user.joined) return null;
-  if (hash01(`${user.id}:${dateKey}:igra`) > user.activity) return null;
-  const r = hash01(`${user.id}:${dateKey}:rijeci`);
+  // u trening ligi simulirani igrači igraju rjeđe
+  const salt = league === "training" ? "t:" : "";
+  const activity = league === "training" ? user.activity * 0.6 : user.activity;
+  if (hash01(`${user.id}:${salt}${dateKey}:igra`) > activity) return null;
+  const r = hash01(`${user.id}:${salt}${dateKey}:rijeci`);
   const words = Math.max(4, Math.round(8 + user.skill * 30 + (r - 0.5) * 26));
-  const perWord = 14 + user.skill * 5 + hash01(`${user.id}:${dateKey}:bodovi`) * 4;
+  const perWord = 14 + user.skill * 5 + hash01(`${user.id}:${salt}${dateKey}:bodovi`) * 4;
   return { words, score: Math.round(words * perWord) };
 }
 
 /** Najbolji dan u razdoblju (high score): bodovi i riječi te partije, te koliko je dana igrao. */
-export function mockRange(user: MockUser, from: string, to: string): { score: number; words: number; played: number } {
+export function mockRange(user: MockUser, from: string, to: string, league: "daily" | "training" = "daily"): { score: number; words: number; played: number } {
   let score = 0;
   let words = 0;
   let played = 0;
   for (let d = from; d <= to; d = addDays(d, 1)) {
-    const r = mockDay(user, d);
+    const r = mockDay(user, d, league);
     if (r) {
       played++;
       if (r.score > score || (r.score === score && r.words > words)) {

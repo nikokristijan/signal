@@ -114,7 +114,9 @@ export interface FriendEntry {
   avatar: AvatarSpec;
   todayWords: number | null;
   todayScore: number | null;
-  /** Najbolji rezultat svih vremena (high score). */
+  /** Najbolji rezultat svih vremena u dnevnoj ligi (high score). */
   bestScore: number;
+  /** Najbolji rezultat svih vremena u trening ligi. */
+  trainingBest: number;
   simulated?: boolean;
 }

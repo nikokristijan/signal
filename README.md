@@ -21,14 +21,30 @@ Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS · Supabase ·
 * **Ljestvice** (uvijek najbolja pojedinačna partija, ne zbroj): *Prijatelji* (današnji najbolji među prijateljima), *Danas*, *Tjedan* (od ponedjeljka) i *High score* (svih vremena). Pri jednakim bodovima pobjeđuje partija s više riječi. U statistici se vide sve tvoje partije, a najbolja svakog dana je označena.
 
 **Dnevni izazov:** niz slogova generira deterministički PRNG iz datuma (`bomba:YYYY-MM-DD`, vrijeme **Europe/Zagreb**, ponoć je granica za sve). Broj izazova = dani od lansiranja (30. 10. 2026. je #1). **Igraj koliko god puta želiš:** kad izgubiš (0 života), odmah možeš opet. Svi pokušaji istog dana koriste **isti niz slogova**, a na ljestvicama se gleda tvoj **najbolji rezultat (high score)**. **Refresh je nastavak, ne nova partija:** napredak se sprema nakon svakog koraka, a sat ne staje (ako tajmer istekne dok te nema, bomba je eksplodirala).
-**Trening** (`/trening`) je neograničen, ne ide na ljestvicu; `/trening?seed=nesto` daje isti niz slogova svima koji otvore taj link.
+## Dvije lige
+
+| | **Dnevna liga** (`/igra`) | **Trening liga** (`/trening`) |
+|---|---|---|
+| Slogovi | isti za sve taj dan (iz datuma) | **svaka partija ima nove**; niz proizlazi iz ID-a partije koji dodjeljuje server |
+| Partija | koliko god puta želiš | koliko god puta želiš |
+| Ljestvice | prijatelji (danas), danas, tjedan, high score | prijatelji (high score), danas, tjedan, high score |
+| Niz dana | da | ne |
+| Duhovi | najbolja današnja partija prijatelja | najbolja trening partija prijatelja |
+
+U obje lige gleda se **najbolja pojedinačna partija** (high score), a rezultat se validira na serveru ponovnim odigravanjem. Ljestvice, statistika i povijest imaju prekidač lige. Seed treninga **ne može birati klijent** (zato nema `?seed=`): inače bi se mogli birati lagani slogovi. Ograničenje: igrač može pokrenuti više partija i odbaciti one s teškim slogovima; ograničeno je na 300 partija po ligi i danu.
+
+## Prijatelji
+
+Dodaju se po **korisničkom imenu** ili preko **linka** `/pozivnica/ime` (stranica *Prijatelji*). Prijateljstvo je obostrano i ne morate igrati istovremeno.
+
+> **Pravi prijatelji traže Supabase.** Bez Supabasea aplikacija je u **demo načinu**: podaci su samo u pregledniku, pa postoje samo *simulirani* igrači (stranica *Prijatelji* ih nudi dodirom). Kad je Supabase spojen, ista stranica pokazuje „Povezano", a `/api/status` javlja je li baza spremna i koja migracija nedostaje.
 
 ## Pokretanje
 
 ```bash
 npm install
 npm run dev        # http://localhost:3000
-npm test           # vitest (111 testova)
+npm test           # vitest (147 testova)
 npm run lint       # provjera tipova
 npm run build
 ```
@@ -72,7 +88,7 @@ pa **sam izračuna bodove**. Dodatno API ruta provjerava da zapis **ne traje dul
 ## Supabase
 
 1. Napravi projekt na [supabase.com](https://supabase.com).
-2. U **SQL editoru** pokreni redom `supabase/migrations/0001_init.sql` (tablice, RLS, funkcije), pa `supabase/migrations/0002_neogranicene_partije.sql` (neograničen broj partija, ljestvice po najboljem rezultatu). Ako si već pokrenuo samo 0001, dovoljno je pokrenuti 0002: postojeći rezultati se čuvaju.
+2. U **SQL editoru** na **praznom** projektu zalijepi cijeli sadržaj `supabase/setup.sql` i pokreni (to su sve migracije odjednom; generira se s `npm run sql:setup`). Ako baza već ima starije migracije, pokreni samo one koje nedostaju: `0002_neogranicene_partije.sql` (neograničene partije, najbolji rezultat) i `0003_lige.sql` (dnevna i trening liga); postojeći rezultati se čuvaju.
 3. **Authentication → Sign In / Providers:** uključi **Allow anonymous sign-ins** (račun bez trenja) i **Email** (za povezivanje e-maila). Preporuka: uključi CAPTCHA za anonimne prijave da se ne mogu masovno otvarati računi.
 4. **Authentication → URL Configuration:** *Site URL* = adresa aplikacije (npr. `https://bomba.vercel.app`), dodaj je i u *Redirect URLs*.
 5. **Project Settings → API:** kopiraj *Project URL*, *anon key* i *service_role key*.
@@ -96,7 +112,7 @@ Prvi ulazak: anonimna prijava + nasumično ime `igrac1234` koje igrač promijeni
 ## Struktura
 
 ```
-src/app/                  stranice: / · /igra · /trening · /ljestvica · /statistika · /prijatelji · /pozivnica/[username] · /api/igra/*
+src/app/                  stranice: / · /igra · /trening · /ljestvica · /statistika · /prijatelji · /pozivnica/[username] · /api/igra/* · /api/status
 src/components/           BombView (fitilj, iskra), GameScreen, GhostBar, LettersTracker, ResultPanel, LeaderboardTable…
 src/hooks/useBombGame.ts  petlja igre: tajmer (rAF), unos, eksplozija, nastavak nakon refresha, predaja zapisa
 src/workers/              web worker za rječnik
@@ -111,7 +127,7 @@ tests/                    vitest
 
 ## Testovi
 
-`npm test` (111 testova):
+`npm test`:
 
 * **generator slogova:** determinizam, prefiksna stabilnost, rast težine, snapshot za 10. 11. 2026., rješivost svakog sloga,
 * **pravila:** tajmer, combo, bodovanje po duljini riječi (dulja riječ uvijek vrijedi više), životi,
@@ -119,7 +135,10 @@ tests/                    vitest
 * **server replay:** valjana partija, lažni bodovi se ignoriraju, odbijanje (riječ izvan rječnika, bez sloga, ponovljena, istek tajmera, prebrz unos, krivi seed, partija nastavljena nakon kraja, nezavršena…),
 * **datumi:** granica zagrebačke ponoći ljeti i zimi, odbrojavanje na dane promjene sata (23 h / 25 h),
 * **neograničen broj partija:** nakon gubitka se odmah igra ponovno, slabija partija ne mijenja najbolji rezultat, bolja ga zamjenjuje, niz dana se ne udvostručuje drugom partijom istog dana (lokalni repozitorij i API rute),
-* **nadogradnja baze 0001 → 0002 na bazi sa starim podacima** (rezultati se čuvaju i povezuju s partijama),
+* **nadogradnja baze 0001 → 0002 → 0003 na bazi sa starim podacima** (rezultati se čuvaju i povezuju s partijama, sve ostaje u dnevnoj ligi),
+* **`supabase/setup.sql`** je usklađen s migracijama i na praznoj bazi daje istu shemu, politike i ovlasti,
+* **dvije lige:** odvojene ljestvice, niz dana samo za dnevnu, seed treninga određuje server, zapis za pogrešnu ligu ili „čudan" seed se odbija,
+* **`/api/status`:** demo / spojeno / koja migracija nedostaje (bez tajni u odgovoru),
 * **SQL na pravom Postgresu (PGlite):** migracija, okidač za profil, **RLS** (igrač ne može upisati ni promijeniti rezultat), `bomba_record_result` samo za `service_role`, nizovi, ljestvice, prijatelji,
 * **API rute `/api/igra/*`** s pravom bazom: idempotentnost, odbijanje, brojač pokušaja, provjera proteklog vremena, razdvojenost igrača.
 

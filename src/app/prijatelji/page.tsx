@@ -2,7 +2,7 @@
 
 import { AuthGate } from "@/components/AuthGate";
 import { useBomb } from "@/components/BombProvider";
-import { AccountCard, FriendsList, ProfileCard } from "@/components/FriendsPanel";
+import { AccountCard, ConnectionCard, FriendsList, ProfileCard } from "@/components/FriendsPanel";
 import { Loading, Page } from "@/components/Page";
 
 export default function FriendsPage() {
@@ -12,6 +12,7 @@ export default function FriendsPage() {
   return (
     <Page>
       <h1 className="text-3xl font-extrabold tracking-tight">Prijatelji i profil</h1>
+      <ConnectionCard />
       <div className="mt-4"><ProfileCard /></div>
       <FriendsList />
       <AccountCard />

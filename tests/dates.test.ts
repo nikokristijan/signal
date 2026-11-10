@@ -47,6 +47,11 @@ describe("dijeljenje", () => {
   it("množina: 1 riječ, 2 riječi, 11 riječi, 21 riječ", () => {
     expect([1, 2, 5, 11, 21, 22].map(wordsLabel)).toEqual(["riječ", "riječi", "riječi", "riječi", "riječ", "riječi"]);
   });
+  it("trening liga ima svoj naslov (bez broja izazova)", () => {
+    expect(shareText({ number: 12, words: 34, score: 512, maxCombo: 7, longest: "neprobojnost", mode: "training" })).toBe(
+      "💣 Bomba · trening · 34 riječi · 512 bodova\n🔥 combo ×7 · najduža: „neprobojnost\"",
+    );
+  });
   it("bez comboa i najduže riječi ne ispisuje drugi red", () => {
     expect(shareText({ number: 1, words: 0, score: 0, maxCombo: 0, longest: "" })).toBe("💣 Bomba #1 · 0 riječi · 0 bodova");
   });
@@ -61,6 +66,14 @@ describe("statistika i niz dana", () => {
     expect(computeStreaks(["2026-11-08", "2026-11-09", "2026-11-10"], "2026-11-10").current).toBe(3);
     expect(computeStreaks(["2026-11-05", "2026-11-06"], "2026-11-10").current).toBe(0);
     expect(computeStreaks(["2026-11-01", "2026-11-02", "2026-11-03", "2026-11-09"], "2026-11-10")).toEqual({ current: 1, longest: 3 });
+  });
+  it("statistika po ligi: trening nema niz dana i ne miješa se s dnevnom", () => {
+    const t = (date: string, score: number): GameResult => ({ ...r(date, score), mode: "training", id: `t-${date}-${score}` });
+    const all = [r("2026-11-09", 100), r("2026-11-10", 200), t("2026-11-10", 900), t("2026-11-10", 400)];
+    const d = computeStats(all, "2026-11-10", "daily");
+    const tr = computeStats(all, "2026-11-10", "training");
+    expect(d).toMatchObject({ played: 2, bestScore: 200, currentStreak: 2 });
+    expect(tr).toMatchObject({ played: 2, bestScore: 900, averageScore: 650, currentStreak: 0, longestStreak: 0 });
   });
   it("najbolji rezultat, prosjek, odigrano", () => {
     const s = computeStats([r("2026-11-08", 300), r("2026-11-09", 500), r("2026-11-10", 100)], "2026-11-10");

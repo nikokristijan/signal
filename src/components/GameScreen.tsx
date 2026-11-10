@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, Bomb, Check, Flame, Smartphone, Volume2, VolumeX } from "lucide-react";
 import { START_LIVES } from "@/lib/game/constants";
+import { LEAGUE_NAME } from "@/lib/game/seeds";
 import { sfx } from "@/lib/audio";
 import type { Mode } from "@/lib/game/constants";
 import { useBombGame } from "@/hooks/useBombGame";
@@ -15,7 +16,8 @@ import { Loading } from "./Page";
 import { ResultPanel } from "./ResultPanel";
 
 export function GameScreen({ mode }: { mode: Mode }) {
-  const { ready, profile, number, settings, setSettings, daily } = useBomb();
+  const { ready, profile, number, settings, setSettings, daily, training } = useBomb();
+  const status = mode === "daily" ? daily : training;
   const bombRef = useRef<BombHandle>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { ui, start, submit, retrySave, playAgain } = useBombGame(mode, bombRef);
@@ -201,7 +203,8 @@ export function GameScreen({ mode }: { mode: Mode }) {
           <TopBar mode={mode} number={number} settings={settings} onSettings={setSettings} />
           <section className="flex flex-1 flex-col items-center justify-center px-6 text-center">
             <Bomb size={56} className="text-ink" strokeWidth={1.8} aria-hidden />
-            <h1 className="mt-3 text-3xl font-extrabold">{mode === "daily" ? `Bomba #${number}` : "Trening"}</h1>
+            <h1 className="mt-3 text-3xl font-extrabold">{LEAGUE_NAME[mode]}</h1>
+            {mode === "daily" && <p className="mt-1 text-sm font-semibold text-muted">Izazov #{number}</p>}
             <ol className="mt-4 space-y-2 text-left text-[15px] text-muted">
               <li><b className="text-ink">1.</b> Na bombi je slog od 2–3 slova.</li>
               <li><b className="text-ink">2.</b> Upiši riječ koja ga sadrži i pritisni Enter.</li>
@@ -218,12 +221,12 @@ export function GameScreen({ mode }: { mode: Mode }) {
             >
               Kreni
             </button>
-            {mode === "daily" && daily?.best ? (
+            {status?.best ? (
               <p className="mt-4 text-sm text-muted" data-testid="idle-best">
-                Najbolje danas: <b className="text-ink">{daily.best.score}</b> · {daily.gamesToday} {daily.gamesToday === 1 ? "partija" : "partija"}
+                Najbolje danas: <b className="text-ink">{status.best.score}</b> · {status.gamesToday} {status.gamesToday === 1 ? "partija" : "partija"}
               </p>
             ) : null}
-            <p className="mt-2 text-xs text-muted">{mode === "daily" ? "Igraj koliko god puta želiš: računa se tvoj najbolji rezultat." : "Trening ne ide na ljestvicu."}</p>
+            <p className="mt-2 text-xs text-muted">{mode === "daily" ? "Svi danas igraju isti niz slogova. Igraj koliko god puta želiš: računa se tvoj najbolji rezultat." : "Svaka partija ima nove slogove. Igraj koliko god puta želiš: računa se tvoj najbolji rezultat u trening ligi."}</p>
           </section>
         </div>
       )}
@@ -241,7 +244,7 @@ function TopBar({ mode, number, settings, onSettings }: { mode: Mode; number: nu
       <Link href="/" className="grid h-11 w-11 place-items-center rounded-full hover:bg-raised" aria-label="Natrag na početnu">
         <ArrowLeft size={22} />
       </Link>
-      <p className="text-sm font-extrabold uppercase tracking-[0.16em]">{mode === "daily" ? `Bomba #${number}` : "Trening"}</p>
+      <p className="text-sm font-extrabold uppercase tracking-[0.16em]">{mode === "daily" ? `Dnevna liga #${number}` : "Trening liga"}</p>
       <div className="flex w-[92px] justify-end">
         {settings && onSettings ? (
           <>

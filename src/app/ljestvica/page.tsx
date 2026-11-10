@@ -5,7 +5,9 @@ import { useEffect, useState } from "react";
 import { AuthGate } from "@/components/AuthGate";
 import { useBomb } from "@/components/BombProvider";
 import { LeaderboardTable } from "@/components/LeaderboardTable";
+import { LeagueToggle } from "@/components/LeagueToggle";
 import { Loading, Page } from "@/components/Page";
+import type { Mode } from "@/lib/game/constants";
 import type { LeaderboardEntry, LeaderboardScope } from "@/lib/game/types";
 
 const TABS: Array<{ id: LeaderboardScope; label: string }> = [
@@ -16,29 +18,36 @@ const TABS: Array<{ id: LeaderboardScope; label: string }> = [
 ];
 
 export default function LeaderboardPage() {
-  const { ready, repo, profile, today, daily } = useBomb();
+  const { ready, repo, profile, today, daily, training } = useBomb();
+  const [league, setLeague] = useState<Mode>("daily");
   const [scope, setScope] = useState<LeaderboardScope>("friends");
+
+  // ?liga=trening otvara trening ligu (npr. s ekrana s rezultatom)
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("liga") === "trening") setLeague("training");
+  }, []);
   const [rows, setRows] = useState<LeaderboardEntry[] | null>(null);
 
   useEffect(() => {
     if (!repo || !profile) return;
     let off = false;
     setRows(null);
-    void repo.getLeaderboard(scope, today).then((r) => !off && setRows(r));
+    void repo.getLeaderboard(league, scope, today).then((r) => !off && setRows(r));
     return () => {
       off = true;
     };
-  }, [repo, profile, scope, today, daily?.gamesToday]);
+  }, [repo, profile, league, scope, today, daily?.gamesToday, training?.gamesToday]);
 
   if (!ready) return <Page><Loading /></Page>;
   if (!profile) return <Page><AuthGate /></Page>;
 
   const me = rows?.find((r) => r.isMe);
-  const played = (daily?.gamesToday ?? 0) > 0;
+  const played = ((league === "daily" ? daily : training)?.gamesToday ?? 0) > 0;
 
   return (
     <Page>
       <h1 className="text-3xl font-extrabold tracking-tight">Ljestvica</h1>
+      <div className="mt-4"><LeagueToggle value={league} onChange={(m) => { setLeague(m); setRows(null); }} /></div>
       <div role="tablist" aria-label="Razdoblje" className="-mx-4 mt-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
         {TABS.map((t) => (
           <button
@@ -56,7 +65,9 @@ export default function LeaderboardPage() {
         ))}
       </div>
       <p className="mt-3 text-xs text-muted">
-        {scope === "friends" ? "Najbolji današnji rezultat tvojih prijatelja." : scope === "daily" ? "Najbolji rezultat svih igrača danas." : scope === "weekly" ? "Najbolji rezultat ovaj tjedan (od ponedjeljka)." : "High score svih vremena: najbolja pojedinačna partija."}
+        {league === "daily"
+          ? scope === "friends" ? "Najbolji današnji rezultat tvojih prijatelja (isti slogovi za sve)." : scope === "daily" ? "Najbolji rezultat svih igrača danas." : scope === "weekly" ? "Najbolji rezultat ovaj tjedan (od ponedjeljka)." : "High score svih vremena: najbolja pojedinačna partija."
+          : scope === "friends" ? "High score tvojih prijatelja u trening ligi (svaka partija ima nove slogove)." : scope === "daily" ? "Najbolja trening partija svih igrača danas." : scope === "weekly" ? "Najbolja trening partija ovaj tjedan (od ponedjeljka)." : "High score svih vremena u trening ligi."}
       </p>
 
       <div className="mt-3">
@@ -71,9 +82,9 @@ export default function LeaderboardPage() {
 
       {rows && !me && (
         <p className="mt-3 text-center text-sm text-muted">
-          {played && scope !== "daily" && scope !== "friends" ? "Još nisi na ovoj ljestvici." : (
+          {played && scope !== "daily" && !(scope === "friends" && league === "daily") ? "Još nisi na ovoj ljestvici." : (
             <>
-              <Link href="/igra" className="font-bold text-ink underline underline-offset-2">Odigraj partiju</Link> da se pojaviš ovdje.
+              <Link href={league === "daily" ? "/igra" : "/trening"} className="font-bold text-ink underline underline-offset-2">Odigraj partiju</Link> da se pojaviš ovdje.
             </>
           )}
         </p>

@@ -7,7 +7,7 @@ import { computeStats, type Stats } from "@/lib/game/stats";
 import type { GameResult, Profile } from "@/lib/game/types";
 import { loadSettings, saveSettings, type Settings } from "@/lib/progress";
 import { getRepository } from "@/lib/repo";
-import type { BombRepository, DailyStatus } from "@/lib/repo/types";
+import type { BombRepository, LeagueStatus } from "@/lib/repo/types";
 
 interface Ctx {
   ready: boolean;
@@ -16,9 +16,14 @@ interface Ctx {
   today: string;
   number: number;
   profile: Profile | null;
-  daily: DailyStatus | null;
+  /** Stanje dnevne lige. */
+  daily: LeagueStatus | null;
+  /** Stanje trening lige. */
+  training: LeagueStatus | null;
   results: GameResult[];
+  /** Statistika dnevne lige. */
   stats: Stats;
+  trainingStats: Stats;
   settings: Settings;
   setSettings(patch: Partial<Settings>): void;
   refresh(): Promise<void>;
@@ -50,7 +55,8 @@ export function BombProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [today, setToday] = useState(() => zagrebDateKey());
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [daily, setDaily] = useState<DailyStatus | null>(null);
+  const [daily, setDaily] = useState<LeagueStatus | null>(null);
+  const [training, setTraining] = useState<LeagueStatus | null>(null);
   const [results, setResults] = useState<GameResult[]>([]);
   const [settings, setSettingsState] = useState<Settings>({ sound: true, vibrate: true });
   const repoRef = useRef<BombRepository | null>(null);
@@ -62,8 +68,9 @@ export function BombProvider({ children }: { children: ReactNode }) {
       setReady(true);
       return;
     }
-    const [d, list] = await Promise.all([r.getDaily(date), r.listResults()]);
+    const [d, t, list] = await Promise.all([r.getStatus("daily", date), r.getStatus("training", date), r.listResults()]);
     setDaily(d);
+    setTraining(t);
     setResults(list);
     setReady(true);
   }, []);
@@ -108,10 +115,11 @@ export function BombProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
-  const stats = useMemo(() => (results.length ? computeStats(results, today) : emptyStats), [results, today]);
+  const stats = useMemo(() => (results.length ? computeStats(results, today, "daily") : emptyStats), [results, today]);
+  const trainingStats = useMemo(() => (results.length ? computeStats(results, today, "training") : emptyStats), [results, today]);
   const value = useMemo<Ctx>(
-    () => ({ ready, repo, today, number: challengeNumber(today), profile, daily, results, stats, settings, setSettings, refresh, rollover, setProfile }),
-    [ready, repo, today, profile, daily, results, stats, settings, setSettings, refresh, rollover],
+    () => ({ ready, repo, today, number: challengeNumber(today), profile, daily, training, results, stats, trainingStats, settings, setSettings, refresh, rollover, setProfile }),
+    [ready, repo, today, profile, daily, training, results, stats, trainingStats, settings, setSettings, refresh, rollover],
   );
   return <BombContext.Provider value={value}>{children}</BombContext.Provider>;
 }

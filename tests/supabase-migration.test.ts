@@ -40,7 +40,7 @@ afterAll(async () => {
   await db.close();
 });
 
-describe("0001 → 0002", () => {
+describe("0001 → 0002 → 0003", () => {
   it("prije nadogradnje: jedna partija dnevno je pravilo baze", async () => {
     await expect(db.query("insert into public.games (user_id, challenge_date, challenge_number) values ($1, '2026-11-08', 1)", [a])).rejects.toThrow(/unique|duplicate/i);
   });
@@ -83,5 +83,54 @@ describe("0001 → 0002", () => {
   it("primarni ključ tablice scores je sada game_id (jedan red po partiji)", async () => {
     const pk = (await db.query<{ col: string }>("select a.attname as col from pg_index i join pg_attribute a on a.attrelid = i.indrelid and a.attnum = any(i.indkey) where i.indrelid = 'public.scores'::regclass and i.indisprimary")).rows;
     expect(pk.map((r) => r.col)).toEqual(["game_id"]);
+  });
+
+  it("0003 (lige): primjenjuje se na bazi sa starim podacima; sve postojeće partije i rezultati ostaju u dnevnoj ligi", async () => {
+    await db.exec(migration("0003_lige.sql"));
+    const g = (await db.query<{ mode: string }>("select distinct mode from public.games")).rows;
+    const sc = (await db.query<{ mode: string }>("select distinct mode from public.scores")).rows;
+    expect(g.map((r) => r.mode)).toEqual(["daily"]);
+    expect(sc.map((r) => r.mode)).toEqual(["daily"]);
+    expect((await db.query("select 1 from public.scores")).rows).toHaveLength(4); // ništa nije izgubljeno
+  });
+
+  it("0003: ljestvica daje isti high score u dnevnoj ligi (450), a trening liga je prazna", async () => {
+    await db.exec(`select set_config('request.jwt.claim.sub', '${a}', false); set role authenticated;`);
+    const daily = (await db.query<{ points: string }>("select * from public.leaderboard('all', '2026-11-10')")).rows;
+    const training = (await db.query<{ points: string }>("select * from public.leaderboard('all', '2026-11-10', 'training')")).rows;
+    await db.exec("reset role");
+    expect(Math.max(...daily.map((r) => Number(r.points)))).toBe(450);
+    expect(training).toHaveLength(0);
+  });
+
+  it("0003: stare funkcije (leaderboard/2, friends_today, list_friends s total_points) su zamijenjene", async () => {
+    const fns = (await db.query<{ proname: string; args: string }>("select p.proname, pg_get_function_identity_arguments(p.oid) as args from pg_proc p join pg_namespace n on n.oid = p.pronamespace where n.nspname = 'public' and p.proname in ('leaderboard','friends_today','friends_ghosts','list_friends') order by 1")).rows;
+    expect(fns.map((f) => f.proname)).toEqual(["friends_ghosts", "leaderboard", "list_friends"]);
+    expect(fns.find((f) => f.proname === "leaderboard")?.args).toMatch(/p_mode text/);
+  });
+
+  it("0003: trening partija se upisuje u trening ligu i NE mijenja niz dana", async () => {
+    await db.query("insert into public.games (user_id, challenge_date, challenge_number, mode) values ($1, '2026-11-12', 1, 'training')", [a]);
+    const [g] = (await db.query<{ id: string }>("select id from public.games where user_id = $1 and status = 'playing'", [a])).rows;
+    const streakBefore = (await db.query("select * from public.streaks where user_id = $1", [a])).rows[0];
+    await db.exec("set role service_role");
+    await db.query("select public.bomba_record_result($1, 700, 30, 4, 'riječ', array['riječ'], 2, 1000, '[]'::jsonb, 'h')", [g.id]);
+    await db.exec("reset role");
+    expect((await db.query<{ mode: string }>("select mode from public.scores where game_id = $1", [g.id])).rows[0].mode).toBe("training");
+    expect((await db.query("select * from public.streaks where user_id = $1", [a])).rows[0]).toEqual(streakBefore); // niz je nepromijenjen
+    await db.exec(`select set_config('request.jwt.claim.sub', '${a}', false); set role authenticated;`);
+    const t = (await db.query<{ points: string }>("select * from public.leaderboard('all', '2026-11-12', 'training')")).rows;
+    await db.exec("reset role");
+    expect(t.map((r) => Number(r.points))).toEqual([700]);
+  });
+
+  it("0003: ovlasti su ispravne (klijent ne smije upisivati; anon ne smije čitati ljestvice)", async () => {
+    await db.exec(`select set_config('request.jwt.claim.sub', '${a}', false); set role authenticated;`);
+    await expect(db.query("select public.bomba_record_result($1, 9999, 99, 9, 'x', array['x'], 0, 1, '[]'::jsonb, 'h')", [a])).rejects.toThrow(/permission denied/i);
+    await db.exec("reset role");
+    await db.exec("set role anon");
+    await expect(db.query("select * from public.leaderboard('all', '2026-11-12', 'daily')")).rejects.toThrow(/permission denied/i);
+    await expect(db.query("select * from public.list_friends('2026-11-12')")).rejects.toThrow(/permission denied/i);
+    await db.exec("reset role");
   });
 });

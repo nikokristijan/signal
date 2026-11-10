@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { Check, Copy, Mail, UserMinus, UserPlus } from "lucide-react";
+import { MOCK_USERS } from "@/lib/repo/mock-community";
 import { AVATAR_COLORS, AVATAR_KEYS } from "@/lib/avatars";
 import type { FriendEntry } from "@/lib/game/types";
 import { Avatar } from "./Avatar";
@@ -135,6 +136,77 @@ export function AccountCard() {
   );
 }
 
+interface Status {
+  mode: "demo" | "supabase";
+  ready: boolean;
+  schema?: { base: boolean; unlimitedGames: boolean; leagues: boolean };
+}
+
+const SETUP_URL = "https://github.com/nikokristijan/signal#supabase";
+
+/**
+ * Kaže zašto se (ne) mogu dodavati pravi prijatelji. Bez Supabasea aplikacija je u demo načinu:
+ * podaci su u pregledniku, pa postoje samo simulirani igrači. Pravi prijatelji trebaju zajedničku bazu.
+ */
+export function ConnectionCard() {
+  const { repo } = useBomb();
+  const [status, setStatus] = useState<Status | null>(null);
+
+  useEffect(() => {
+    if (repo?.mode !== "supabase") return;
+    let off = false;
+    fetch("/api/status")
+      .then((r) => r.json() as Promise<Status>)
+      .then((s) => !off && setStatus(s))
+      .catch(() => !off && setStatus(null));
+    return () => {
+      off = true;
+    };
+  }, [repo?.mode]);
+
+  if (!repo) return null;
+
+  if (repo.mode === "local" || status?.mode === "demo") {
+    return (
+      <section className="tile mt-4 border-signal/40 bg-signal-tint px-4 py-4" aria-labelledby="povezivanje-h" data-testid="connection-demo">
+        <h2 id="povezivanje-h" className="font-extrabold">Demo način: prijatelji su simulirani</h2>
+        <p className="mt-1 text-sm text-ink/80">
+          Dodavanje pravih ljudi traži zajedničku bazu, a ova je instalacija još nije spojena (podaci su samo u ovom pregledniku). Zasad možeš dodati simulirane igrače da vidiš kako ljestvice rade.
+        </p>
+        <details className="mt-2 text-sm">
+          <summary className="cursor-pointer font-semibold">Kako uključiti prave prijatelje (5 koraka)</summary>
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-ink/80">
+            <li>Napravi besplatan projekt na supabase.com.</li>
+            <li>U <b>SQL Editor</b> zalijepi cijeli sadržaj datoteke <code>supabase/setup.sql</code> i pokreni.</li>
+            <li>U <b>Authentication → Sign In / Providers</b> uključi <b>Allow anonymous sign-ins</b>.</li>
+            <li>U Vercelu (Settings → Environment Variables) dodaj <code>NEXT_PUBLIC_SUPABASE_URL</code>, <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code> i <code>SUPABASE_SERVICE_ROLE_KEY</code>.</li>
+            <li>Ponovno pokreni deploy. Ova kartica će se promijeniti u „Povezano".</li>
+          </ol>
+          <a href={SETUP_URL} target="_blank" rel="noreferrer" className="mt-2 inline-block font-semibold underline underline-offset-2">
+            Detaljne upute
+          </a>
+        </details>
+      </section>
+    );
+  }
+
+  if (!status) return null;
+  const missing = status.schema && !status.ready ? [!status.schema.base && "0001_init.sql", !status.schema.unlimitedGames && "0002_neogranicene_partije.sql", !status.schema.leagues && "0003_lige.sql"].filter(Boolean) : [];
+  return status.ready ? (
+    <section className="tile mt-4 px-4 py-3 text-sm" data-testid="connection-ok">
+      <p className="font-semibold text-signal-dark">✓ Povezano: dodani prijatelji su pravi igrači.</p>
+      <p className="text-muted">Pošalji im svoj link ili korisničko ime. Ne morate igrati istovremeno.</p>
+    </section>
+  ) : (
+    <section className="tile mt-4 border-danger/40 bg-danger-tint px-4 py-3 text-sm" role="alert" data-testid="connection-broken">
+      <p className="font-semibold text-danger">Supabase je spojen, ali baza nije spremna.</p>
+      <p className="text-ink/80">
+        {missing.length ? <>Nedostaje: <code>{missing.join(", ")}</code>. Pokreni ih u SQL editoru.</> : "Provjeri varijable okoline i migracije."}
+      </p>
+    </section>
+  );
+}
+
 export function FriendsList() {
   const { repo, today, profile } = useBomb();
   const [friends, setFriends] = useState<FriendEntry[] | null>(null);
@@ -149,15 +221,19 @@ export function FriendsList() {
     void load();
   }, [load, profile?.id]);
 
-  async function add(e: FormEvent) {
-    e.preventDefault();
+  async function addByName(username: string) {
     if (!repo) return;
-    const r = await repo.addFriend(name, today);
+    const r = await repo.addFriend(username, today);
     if (r.ok) {
       setMsg({ ok: true, text: `Dodan: ${r.value.username}.` });
       setName("");
       await load();
     } else setMsg({ ok: false, text: r.error });
+  }
+
+  async function add(e: FormEvent) {
+    e.preventDefault();
+    await addByName(name);
   }
 
   return (
@@ -179,6 +255,21 @@ export function FriendsList() {
       </form>
       {msg && <p className={`mt-2 text-sm ${msg.ok ? "text-signal-dark" : "text-danger"}`} role="status" data-testid="friend-msg">{msg.text}</p>}
 
+      {repo?.mode === "local" && friends && (
+        <div className="mt-3" data-testid="suggestions">
+          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-muted">Simulirani igrači (dodaj dodirom)</p>
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {MOCK_USERS.filter((u) => !friends.some((f) => f.userId === u.id))
+              .slice(0, 8)
+              .map((u) => (
+                <button key={u.id} type="button" onClick={() => void addByName(u.username)} className="rounded-full border border-line bg-white px-3 py-1.5 text-sm font-semibold hover:bg-raised" data-testid={`suggest-${u.username}`}>
+                  + {u.username}
+                </button>
+              ))}
+          </div>
+        </div>
+      )}
+
       {friends === null ? null : friends.length === 0 ? (
         <p className="tile mt-4 px-4 py-6 text-center text-muted">Još nemaš prijatelja. Dodaj nekoga po korisničkom imenu ili mu pošalji svoj link.</p>
       ) : (
@@ -189,7 +280,7 @@ export function FriendsList() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{f.username}{f.simulated && <span className="ml-1.5 text-[10px] font-bold uppercase text-muted">simuliran</span>}</p>
                 <p className="text-xs text-muted">
-                  Danas {f.todayScore === null ? "još nije igrao" : `${f.todayScore} bod. (${f.todayWords} r.)`} · High score {f.bestScore.toLocaleString("hr")}
+                  Danas {f.todayScore === null ? "još nije igrao" : `${f.todayScore} bod. (${f.todayWords} r.)`} · High score {f.bestScore.toLocaleString("hr")} · Trening {f.trainingBest.toLocaleString("hr")}
                 </p>
               </div>
               <button onClick={() => void repo?.removeFriend(f.userId).then(load)} className="grid h-9 w-9 place-items-center rounded-full text-muted hover:bg-raised hover:text-ink" aria-label={`Ukloni ${f.username}`}>

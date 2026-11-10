@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "rjecnik": "node scripts/build-dictionary.mjs"
+    "rjecnik": "node scripts/build-dictionary.mjs",
+    "sql:setup": "node scripts/build-setup-sql.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",

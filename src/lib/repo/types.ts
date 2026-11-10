@@ -1,3 +1,4 @@
+import type { Mode } from "../game/constants";
 import type {
   AvatarSpec,
   FinishInfo,
@@ -11,16 +12,27 @@ import type {
   Result,
 } from "../game/types";
 
-export interface DailyStatus {
+/** Stanje jedne lige (dnevne ili trening) za igrača. */
+export interface LeagueStatus {
+  mode: Mode;
   date: string;
   number: number;
   /** Postoji nezavršena partija (može se nastaviti). */
   playing: boolean;
   /** Kad je počela nezavršena partija (ms, serverski sat). */
   startedAt?: number;
-  /** Najbolja završena partija danas, ili null ako danas još nije odigrana nijedna. */
+  /** ID nezavršene partije (kod treninga iz njega proizlazi niz slogova). */
+  gameId?: string;
+  /** Najbolja završena partija DANAS u toj ligi, ili null. */
   best: GameResult | null;
   gamesToday: number;
+}
+
+export interface StartedGame {
+  startedAt: number;
+  resumed: boolean;
+  /** Dodjeljuje server. Dnevna liga: samo identifikator; trening liga: iz njega se izvodi niz slogova. */
+  gameId: string;
 }
 
 /**
@@ -28,8 +40,10 @@ export interface DailyStatus {
  *  - LocalRepository    – localStorage + simulirani prijatelji (demo bez Supabasea)
  *  - SupabaseRepository – Supabase Auth + Postgres + API rute koje ponovno odigravaju partiju
  *
- * Partija se može igrati koliko god puta; svi dnevni pokušaji koriste isti niz slogova, a na ljestvicama se
- * gleda NAJBOLJI rezultat (high score). Klijent NIKAD ne šalje bodove: samo zapis partije (`finishDaily`).
+ * DVIJE LIGE, obje bez ograničenja broja partija i obje s ljestvicom po NAJBOLJEM rezultatu (high score):
+ *  - dnevna liga: isti niz slogova za sve taj dan, utječe na niz dana;
+ *  - trening liga: svaka partija ima svoj niz slogova (seed dodjeljuje server), ne utječe na niz dana.
+ * Klijent NIKAD ne šalje bodove: samo zapis partije (`finishGame`).
  */
 export interface BombRepository {
   readonly mode: "local" | "supabase";
@@ -44,21 +58,24 @@ export interface BombRepository {
   ensureProfile(): Promise<Profile | null>;
   updateProfile(patch: { username?: string; avatar?: AvatarSpec }): Promise<Result<Profile>>;
 
-  getDaily(date: string): Promise<DailyStatus>;
+  getStatus(mode: Mode, date: string): Promise<LeagueStatus>;
   /**
-   * Započinje novu partiju. `resume: true` nastavlja nezavršenu partiju ako postoji;
+   * Započinje novu partiju u ligi. `resume: true` nastavlja nezavršenu partiju ako postoji;
    * inače se nezavršena partija odbacuje i počinje nova.
    */
-  startDaily(date: string, resume: boolean): Promise<Result<{ startedAt: number; resumed: boolean }>>;
-  finishDaily(date: string, log: LogEntry[]): Promise<Result<FinishInfo>>;
-  /** Sve završene partije, najnovije prvo. */
+  startGame(mode: Mode, date: string, resume: boolean): Promise<Result<StartedGame>>;
+  finishGame(mode: Mode, date: string, gameId: string, log: LogEntry[]): Promise<Result<FinishInfo>>;
+  /** Sve završene partije svih liga, najnovije prvo. */
   listResults(): Promise<GameResult[]>;
 
   listFriends(date: string): Promise<FriendEntry[]>;
   addFriend(username: string, date: string): Promise<Result<FriendEntry>>;
   removeFriend(userId: string): Promise<void>;
-  /** Prijatelji koji su danas već odigrali: „duhovi" na traci napretka (njihova najbolja današnja partija). */
-  getGhosts(date: string): Promise<Ghost[]>;
+  /**
+   * „Duhovi" na traci napretka: prijatelji koje možeš prestići.
+   * Dnevna: najbolja današnja partija svakog prijatelja. Trening: njihova najbolja trening partija svih vremena.
+   */
+  getGhosts(mode: Mode, date: string): Promise<Ghost[]>;
 
-  getLeaderboard(scope: LeaderboardScope, date: string): Promise<LeaderboardEntry[]>;
+  getLeaderboard(mode: Mode, scope: LeaderboardScope, date: string): Promise<LeaderboardEntry[]>;
 }
