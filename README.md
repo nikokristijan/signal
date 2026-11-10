@@ -103,6 +103,19 @@ redirects to a 60-second signed URL for stages already revealed (or any stage on
 the full photo can't be fetched early. In local demo mode the same images are plain static files in
 `public/challenges/` — fine for a demo, but not spoiler-proof.
 
+## What has been verified
+
+* `npm test` — 29 unit tests: scoring, answer matching, attempt engine, streaks and dates, the
+  dataset (32 challenges, unique ids/dates, five nested stages with files on disk, no answer
+  matching a different challenge) and the full local-repository flow.
+* End-to-end in a real browser (Playwright, mobile 390×844 and desktop 1280×800, against both
+  `next dev` and `next start`): open today's challenge → view stage 1 → wrong answer (−50, image and
+  input unchanged) → reveal stage 2 → correct answer (score 350) → leaderboard (all five tabs, current
+  user highlighted) → refresh (progress and result persist, including mid-game) → stats, history,
+  friends and invite link.
+* **Not verified:** the Supabase adapter, SQL migrations and `/api/stage` (no Supabase project was
+  available). Run them against a fresh project before relying on them.
+
 ## Project layout
 
 ```

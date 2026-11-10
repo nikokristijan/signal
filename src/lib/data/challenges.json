@@ -48,20 +48,20 @@
     "difficulty": "easy",
     "fact": "A pineapple is not a single fruit but a cluster of many fused fruitlets.",
     "focus": {
-      "x": 0.5,
-      "y": 0.5
+      "x": 0.51,
+      "y": 0.66
     },
     "source": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Pineapple_Supply_Co._2016-02-12_%28Unsplash%29.jpg",
-      "width": 6000,
-      "height": 4000
+      "url": "https://upload.wikimedia.org/wikipedia/commons/8/83/Ananas_comosus%2C_Dole_Pineapple_Plantation%2C_Oahu%2C_Hawaii%2C_USA2.jpg",
+      "width": 3888,
+      "height": 2592
     },
     "credit": {
-      "title": "File:Pineapple Supply Co. 2016-02-12 (Unsplash).jpg",
-      "author": "Pineapple Supply Co. pineapple",
-      "license": "CC0",
-      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-      "page": "https://commons.wikimedia.org/wiki/File:Pineapple_Supply_Co._2016-02-12_(Unsplash).jpg"
+      "title": "File:Ananas comosus, Dole Pineapple Plantation, Oahu, Hawaii, USA2.jpg",
+      "author": "Diego Delso",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Ananas_comosus,_Dole_Pineapple_Plantation,_Oahu,_Hawaii,_USA2.jpg"
     }
   },
   {
@@ -116,20 +116,20 @@
     "difficulty": "medium",
     "fact": "Philips introduced the compact cassette in 1963.",
     "focus": {
-      "x": 0.5,
-      "y": 0.5
+      "x": 0.28,
+      "y": 0.36
     },
     "source": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/2/25/BASF-magnetic-audio-tape-01.jpg",
-      "width": 4669,
-      "height": 3608
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Photoelasticity_-_TDK_Head_Cleaner_-_Black_background.jpg",
+      "width": 5542,
+      "height": 3690
     },
     "credit": {
-      "title": "File:BASF-magnetic-audio-tape-01.jpg",
-      "author": "CEphoto, Uwe Aranas",
-      "license": "CC BY-SA 3.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
-      "page": "https://commons.wikimedia.org/wiki/File:BASF-magnetic-audio-tape-01.jpg"
+      "title": "File:Photoelasticity - TDK Head Cleaner - Black background.jpg",
+      "author": "Colin",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Photoelasticity_-_TDK_Head_Cleaner_-_Black_background.jpg"
     }
   },
   {
@@ -532,20 +532,20 @@
     "difficulty": "medium",
     "fact": "Hourglasses were used for centuries aboard ships to measure time.",
     "focus": {
-      "x": 0.5,
-      "y": 0.5
+      "x": 0.45,
+      "y": 0.55
     },
     "source": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Hourglasses.jpg",
-      "width": 6566,
-      "height": 4377
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/af/Hourglass_1.jpg",
+      "width": 4080,
+      "height": 3072
     },
     "credit": {
-      "title": "File:Hourglasses.jpg",
-      "author": "Aaaatu",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-      "page": "https://commons.wikimedia.org/wiki/File:Hourglasses.jpg"
+      "title": "File:Hourglass 1.jpg",
+      "author": "Suohros",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "page": "https://commons.wikimedia.org/wiki/File:Hourglass_1.jpg"
     }
   },
   {
@@ -847,20 +847,20 @@
     "difficulty": "easy",
     "fact": "The tower began to lean during construction in the 12th century because of soft ground.",
     "focus": {
-      "x": 0.5,
-      "y": 0.5
+      "x": 0.64,
+      "y": 0.42
     },
     "source": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/4/44/Cathedral_and_Leaning_Tower%2C_Pisa_04.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/98/Exterior_of_the_Leaning_Tower_%28Pisa%29_04.jpg",
       "width": 4272,
       "height": 2848
     },
     "credit": {
-      "title": "File:Cathedral and Leaning Tower, Pisa 04.jpg",
+      "title": "File:Exterior of the Leaning Tower (Pisa) 04.jpg",
       "author": "John Samuel",
       "license": "CC BY-SA 4.0",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-      "page": "https://commons.wikimedia.org/wiki/File:Cathedral_and_Leaning_Tower,_Pisa_04.jpg"
+      "page": "https://commons.wikimedia.org/wiki/File:Exterior_of_the_Leaning_Tower_(Pisa)_04.jpg"
     }
   },
   {
@@ -1018,19 +1018,19 @@
     "fact": "The first crewed hot air balloon flight took place in Paris in 1783.",
     "focus": {
       "x": 0.5,
-      "y": 0.5
+      "y": 0.3
     },
     "source": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/6/68/Hot_air_balloon_on_the_ground_in_Cappadocia.jpg",
-      "width": 5184,
-      "height": 3456
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Hot_air_balloon_in_Cappadocia_02.jpg",
+      "width": 5058,
+      "height": 3336
     },
     "credit": {
-      "title": "File:Hot air balloon on the ground in Cappadocia.jpg",
+      "title": "File:Hot air balloon in Cappadocia 02.jpg",
       "author": "Bernard Gagnon",
       "license": "CC BY-SA 3.0",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
-      "page": "https://commons.wikimedia.org/wiki/File:Hot_air_balloon_on_the_ground_in_Cappadocia.jpg"
+      "page": "https://commons.wikimedia.org/wiki/File:Hot_air_balloon_in_Cappadocia_02.jpg"
     }
   },
   {
