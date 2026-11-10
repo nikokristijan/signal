@@ -6,6 +6,7 @@ import { useBomb } from "@/components/BombProvider";
 import { Loading, Page } from "@/components/Page";
 import { formatDate } from "@/lib/game/dates";
 import { wordsLabel } from "@/lib/game/share";
+import { better } from "@/lib/game/results";
 
 function Tile({ label, value, sub, testid }: { label: string; value: string; sub?: string; testid: string }) {
   return (
@@ -22,15 +23,23 @@ export default function StatsPage() {
   if (!ready) return <Page><Loading /></Page>;
   if (!profile) return <Page><AuthGate /></Page>;
   const history = results.filter((r) => r.mode === "daily");
+  // najbolja partija svakog dana (high score tog dana)
+  const dayBest = new Map<string, string>();
+  const bestByDate = new Map<string, (typeof history)[number]>();
+  for (const g of history) {
+    const cur = bestByDate.get(g.date);
+    if (!cur || better(g, cur)) bestByDate.set(g.date, g);
+  }
+  for (const [date, g] of bestByDate) dayBest.set(date, g.id);
 
   return (
     <Page>
       <h1 className="text-3xl font-extrabold tracking-tight">Statistika</h1>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
         <Tile label="Niz dana" value={String(stats.currentStreak)} sub={`najduži ${stats.longestStreak}`} testid="stat-streak" />
-        <Tile label="Najbolji" value={String(stats.bestScore)} sub="bodova" testid="stat-best" />
+        <Tile label="High score" value={String(stats.bestScore)} sub="najbolja partija" testid="stat-best" />
         <Tile label="Prosjek" value={String(stats.averageScore)} sub="bodova po partiji" testid="stat-average" />
-        <Tile label="Odigrano" value={String(stats.played)} sub={stats.played === 1 ? "partija" : "partija"} testid="stat-played" />
+        <Tile label="Partija" value={String(stats.played)} sub="ukupno odigrano" testid="stat-played" />
         <Tile label="Riječi" value={String(stats.totalWords)} sub="ukupno" testid="stat-words" />
         <Tile label="Combo" value={`×${stats.bestCombo}`} sub="najbolji" testid="stat-combo" />
       </div>
@@ -48,15 +57,18 @@ export default function StatsPage() {
       ) : (
         <ul className="mt-3 space-y-2" data-testid="history">
           {history.map((h) => (
-            <li key={h.date} className="tile flex items-center gap-3 px-4 py-3" data-testid="history-row">
+            <li key={h.id} className="tile flex items-center gap-3 px-4 py-3" data-testid="history-row" data-daybest={dayBest.get(h.date) === h.id ? "true" : undefined}>
               <div className="min-w-0 flex-1">
-                <p className="font-bold">Bomba #{h.number}</p>
+                <p className="font-bold">
+                  Bomba #{h.number}
+                  {dayBest.get(h.date) === h.id && <span className="ml-2 rounded-full bg-signal-tint px-2 py-0.5 align-middle text-[10px] font-bold uppercase tracking-wide text-signal-dark">najbolji dana</span>}
+                </p>
                 <p className="text-xs text-muted">
                   {formatDate(h.date)} · {h.words} {wordsLabel(h.words)} · combo ×{h.maxCombo}
                   {h.longest ? ` · „${h.longest}"` : ""}
                 </p>
               </div>
-              <p className="text-xl font-extrabold tabular-nums text-signal">{h.score}</p>
+              <p className="text-xl font-extrabold tabular-nums text-ink">{h.score}</p>
             </li>
           ))}
         </ul>

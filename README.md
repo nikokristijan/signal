@@ -18,8 +18,9 @@ Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS · Supabase ·
 * Životi se ne mogu dobiti natrag: kreneš s 2, a partija završava na 0.
 * Dijakritici nisu obavezni: `kisobran` vrijedi ako postoji `kišobran`. Slog s dijakritikom (npr. `ŠA`) traži riječ koja ga stvarno sadrži, pa `sat` ne vrijedi.
 * **Duhovi prijatelja:** tanka traka napretka s točkom za svakog prijatelja koji je danas igrao (gdje je pao), a tekst iznad nje kaže tko je sljedeći koga možeš prestići (`Sljedeći: Ivan · 23 — još 5`). Kad ga prestigneš, pojavi se *Prestigao si Ivana!*
+* **Ljestvice** (uvijek najbolja pojedinačna partija, ne zbroj): *Prijatelji* (današnji najbolji među prijateljima), *Danas*, *Tjedan* (od ponedjeljka) i *High score* (svih vremena). Pri jednakim bodovima pobjeđuje partija s više riječi. U statistici se vide sve tvoje partije, a najbolja svakog dana je označena.
 
-**Dnevni izazov:** niz slogova generira deterministički PRNG iz datuma (`bomba:YYYY-MM-DD`, vrijeme **Europe/Zagreb**, ponoć je granica za sve). Broj izazova = dani od lansiranja (30. 10. 2026. je #1). Jedan rangirani pokušaj dnevno. **Refresh je nastavak, ne nova partija:** napredak se sprema nakon svakog koraka, a sat ne staje (ako tajmer istekne dok te nema, bomba je eksplodirala).
+**Dnevni izazov:** niz slogova generira deterministički PRNG iz datuma (`bomba:YYYY-MM-DD`, vrijeme **Europe/Zagreb**, ponoć je granica za sve). Broj izazova = dani od lansiranja (30. 10. 2026. je #1). **Igraj koliko god puta želiš:** kad izgubiš (0 života), odmah možeš opet. Svi pokušaji istog dana koriste **isti niz slogova**, a na ljestvicama se gleda tvoj **najbolji rezultat (high score)**. **Refresh je nastavak, ne nova partija:** napredak se sprema nakon svakog koraka, a sat ne staje (ako tajmer istekne dok te nema, bomba je eksplodirala).
 **Trening** (`/trening`) je neograničen, ne ide na ljestvicu; `/trening?seed=nesto` daje isti niz slogova svima koji otvore taj link.
 
 ## Pokretanje
@@ -27,7 +28,7 @@ Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS · Supabase ·
 ```bash
 npm install
 npm run dev        # http://localhost:3000
-npm test           # vitest (89 testova)
+npm test           # vitest (111 testova)
 npm run lint       # provjera tipova
 npm run build
 ```
@@ -63,7 +64,7 @@ Klijent **nikad ne šalje bodove**, nego samo zapis partije `[{w: "riječ" | nul
 * da je unos ljudski moguć (≥ 40 ms po slovu),
 * da zapis ne nastavlja nakon kraja i da je partija završena,
 
-pa **sam izračuna bodove**. Dodatno API ruta provjerava da zapis **ne traje dulje nego što je partija stvarno trajala** (vrijeme starta bilježi server), da datum određuje server (Europe/Zagreb), najviše 5 neuspjelih slanja i da je slanje idempotentno.
+pa **sam izračuna bodove**. Dodatno API ruta provjerava da zapis **ne traje dulje nego što je partija stvarno trajala** (vrijeme starta bilježi server), da datum određuje server (Europe/Zagreb), najviše 5 neuspjelih slanja po partiji, najviše 300 partija po igraču i danu te da je slanje idempotentno (isti zapis poslan ponovno vraća već upisanu partiju). Svaka partija ima vlastito vrijeme starta, pa se ne može „ubrzati" zapis.
 **RLS** je uključen na svim tablicama; nema insert/update politika na `games`, `scores`, `streaks`, `friendships`. Rezultat upisuje samo `bomba_record_result()` koju smije pozvati samo `service_role`. Service-role ključ je samo na serveru.
 
 > Ograničenje: ovo je provjera pravila i vjerodostojnosti, **ne** zaštita od bota koji stvarno igra u stvarnom vremenu s rječnikom. Za takvo što treba dodatni sloj (npr. CAPTCHA, ograničenja brzine, detekcija obrazaca).
@@ -71,7 +72,7 @@ pa **sam izračuna bodove**. Dodatno API ruta provjerava da zapis **ne traje dul
 ## Supabase
 
 1. Napravi projekt na [supabase.com](https://supabase.com).
-2. U **SQL editoru** pokreni `supabase/migrations/0001_init.sql` (tablice `profiles`, `games`, `scores`, `friendships`, `streaks`, RLS, funkcije).
+2. U **SQL editoru** pokreni redom `supabase/migrations/0001_init.sql` (tablice, RLS, funkcije), pa `supabase/migrations/0002_neogranicene_partije.sql` (neograničen broj partija, ljestvice po najboljem rezultatu). Ako si već pokrenuo samo 0001, dovoljno je pokrenuti 0002: postojeći rezultati se čuvaju.
 3. **Authentication → Sign In / Providers:** uključi **Allow anonymous sign-ins** (račun bez trenja) i **Email** (za povezivanje e-maila). Preporuka: uključi CAPTCHA za anonimne prijave da se ne mogu masovno otvarati računi.
 4. **Authentication → URL Configuration:** *Site URL* = adresa aplikacije (npr. `https://bomba.vercel.app`), dodaj je i u *Redirect URLs*.
 5. **Project Settings → API:** kopiraj *Project URL*, *anon key* i *service_role key*.
@@ -110,13 +111,15 @@ tests/                    vitest
 
 ## Testovi
 
-`npm test` (89 testova):
+`npm test` (111 testova):
 
 * **generator slogova:** determinizam, prefiksna stabilnost, rast težine, snapshot za 10. 11. 2026., rješivost svakog sloga,
 * **pravila:** tajmer, combo, bodovanje po duljini riječi (dulja riječ uvijek vrijedi više), životi,
 * **normalizacija dijakritika** i rječnik (*ukrao, kravatom, kišobran, kisobran → kišobran*, `sat` ≠ `ŠA`),
 * **server replay:** valjana partija, lažni bodovi se ignoriraju, odbijanje (riječ izvan rječnika, bez sloga, ponovljena, istek tajmera, prebrz unos, krivi seed, partija nastavljena nakon kraja, nezavršena…),
 * **datumi:** granica zagrebačke ponoći ljeti i zimi, odbrojavanje na dane promjene sata (23 h / 25 h),
+* **neograničen broj partija:** nakon gubitka se odmah igra ponovno, slabija partija ne mijenja najbolji rezultat, bolja ga zamjenjuje, niz dana se ne udvostručuje drugom partijom istog dana (lokalni repozitorij i API rute),
+* **nadogradnja baze 0001 → 0002 na bazi sa starim podacima** (rezultati se čuvaju i povezuju s partijama),
 * **SQL na pravom Postgresu (PGlite):** migracija, okidač za profil, **RLS** (igrač ne može upisati ni promijeniti rezultat), `bomba_record_result` samo za `service_role`, nizovi, ljestvice, prijatelji,
 * **API rute `/api/igra/*`** s pravom bazom: idempotentnost, odbijanje, brojač pokušaja, provjera proteklog vremena, razdvojenost igrača.
 
@@ -131,4 +134,4 @@ Uz to je cijeli tok prošao u pravom pregledniku (Playwright, mobilna i desktop 
 * **Deploy na Vercel** nije napravljen.
 * **Zvuk** (Web Audio) i **vibracija**: kod radi bez grešaka u pregledniku, ali zvuk nisam mogao čuti, a vibracija ne postoji u emulaciji.
 * **Pravi mobiteli** (iOS Safari/Android Chrome): ponašanje tipkovnice i fokusa provjereno samo u emuliranom Chromiumu. Input se nikad ne uklanja iz DOM-a niti onemogućuje, da tipkovnica ostane otvorena, ali to treba vidjeti na uređaju.
-* Ako se partija započne na jednom uređaju i napredak se izgubi (npr. brisanje podataka preglednika), pokušaj za taj dan je zaključan (prikazuje se poruka). Nema serverskog checkpointa partije.
+* Ako se partija započne na jednom uređaju i napredak se izgubi (npr. brisanje podataka preglednika), ta se nezavršena partija odbacuje i počinje nova. Nema serverskog checkpointa partije.

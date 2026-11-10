@@ -189,7 +189,7 @@ export function FriendsList() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{f.username}{f.simulated && <span className="ml-1.5 text-[10px] font-bold uppercase text-muted">simuliran</span>}</p>
                 <p className="text-xs text-muted">
-                  Danas {f.todayScore === null ? "još nije igrao" : `${f.todayScore} bod. (${f.todayWords} r.)`} · Ukupno {f.totalScore.toLocaleString("hr")}
+                  Danas {f.todayScore === null ? "još nije igrao" : `${f.todayScore} bod. (${f.todayWords} r.)`} · High score {f.bestScore.toLocaleString("hr")}
                 </p>
               </div>
               <button onClick={() => void repo?.removeFriend(f.userId).then(load)} className="grid h-9 w-9 place-items-center rounded-full text-muted hover:bg-raised hover:text-ink" aria-label={`Ukloni ${f.username}`}>

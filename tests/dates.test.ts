@@ -54,7 +54,7 @@ describe("dijeljenje", () => {
 
 describe("statistika i niz dana", () => {
   const r = (date: string, score: number, words = 10): GameResult => ({
-    mode: "daily", date, number: 1, score, words, maxCombo: 2, longest: "riječ", wordList: [], booms: 2, durationMs: 1000, finishedAt: "",
+    id: `g-${date}-${score}`, mode: "daily", date, number: 1, score, words, maxCombo: 2, longest: "riječ", wordList: [], booms: 2, durationMs: 1000, finishedAt: "",
   });
   it("niz živi ako danas još nije odigrano, a puca nakon propuštenog dana", () => {
     expect(computeStreaks(["2026-11-08", "2026-11-09"], "2026-11-10")).toEqual({ current: 2, longest: 2 });

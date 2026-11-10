@@ -12,10 +12,10 @@ import { dailySeed } from "@/lib/game/dates";
 import { minTypingMs, replayLog, summarize } from "@/lib/game/replay";
 import { applyBoom, applyWord, initialState, timeLimitMs } from "@/lib/game/rules";
 import { syllableAt } from "@/lib/game/syllables";
-import type { GameResult, GameState, Ghost, LogEntry } from "@/lib/game/types";
+import type { FinishInfo, GameResult, GameState, Ghost, LogEntry } from "@/lib/game/types";
 import { clearProgress, loadProgress, saveProgress } from "@/lib/progress";
 
-export type Phase = "loading" | "idle" | "playing" | "exploding" | "saving" | "done" | "blocked" | "error";
+export type Phase = "loading" | "idle" | "playing" | "exploding" | "saving" | "done" | "error";
 
 export interface Popup {
   key: number;
@@ -38,6 +38,8 @@ export interface UI {
   screenShake: number;
   inputShake: number;
   result: GameResult | null;
+  /** Samo za dnevne partije: je li ovo novi najbolji rezultat (danas / svih vremena). */
+  info: FinishInfo | null;
   error: string | null;
   ghosts: Ghost[];
 }
@@ -57,6 +59,7 @@ const initialUI: UI = {
   screenShake: 0,
   inputShake: 0,
   result: null,
+  info: null,
   error: null,
   ghosts: [],
 };
@@ -132,7 +135,7 @@ export function useBombGame(mode: Mode, bombRef: RefObject<BombHandle | null>) {
     const log = logRef.current;
     if (mode === "training") {
       const s = summarize(g, log);
-      patch({ phase: "done", result: { ...s, mode: "training", date: today, number: 0, finishedAt: new Date().toISOString() } });
+      patch({ phase: "done", info: null, result: { ...s, id: `trening-${Date.now()}`, mode: "training", date: today, number: 0, finishedAt: new Date().toISOString() } });
       phaseRef.current = "done";
       return;
     }
@@ -144,7 +147,7 @@ export function useBombGame(mode: Mode, bombRef: RefObject<BombHandle | null>) {
       return;
     }
     clearProgress();
-    patch({ phase: "done", result: r.value, error: null });
+    patch({ phase: "done", result: r.value.result, info: r.value, error: null });
     phaseRef.current = "done";
     await refresh();
   }, [mode, patch, persist, refresh, repo, setPhase, today]);
@@ -274,21 +277,17 @@ export function useBombGame(mode: Mode, bombRef: RefObject<BombHandle | null>) {
     gameRef.current = initialState();
     logRef.current = [];
     announcedRef.current = new Set();
-    patch({ result: null, error: null, feedback: null, popup: null, overtaken: null });
+    patch({ result: null, info: null, error: null, feedback: null, popup: null, overtaken: null });
   }, [patch]);
 
+  /** Počinje NOVU partiju (dnevnu: isti niz slogova kao i prethodne tog dana; nezavršena partija se odbacuje). */
   const start = useCallback(async () => {
     sfx.unlock();
     if (mode === "daily") {
-      const r = await repo?.startDaily(today);
+      const r = await repo?.startDaily(today, false);
       if (!r || !r.ok) {
         patch({ phase: "error", error: r ? r.error : "Nema veze s pozadinom." });
         phaseRef.current = "error";
-        return;
-      }
-      if (r.value.state === "finished" && r.value.result) {
-        patch({ phase: "done", result: r.value.result });
-        phaseRef.current = "done";
         return;
       }
       startedAtRef.current = r.value.startedAt;
@@ -333,25 +332,16 @@ export function useBombGame(mode: Mode, bombRef: RefObject<BombHandle | null>) {
       if (cancelledRef.current) return;
 
       const d = dailyRef.current;
-      if (mode === "daily" && d) {
-        if (d.state === "finished" && d.result) {
-          patch({ phase: "done", result: d.result });
-          phaseRef.current = "done";
-          return;
-        }
-        if (d.state === "playing") {
-          const progress = loadProgress(today);
-          if (!progress) {
-            setPhase("blocked"); // partija je započeta, ali se ne može nastaviti (npr. drugi uređaj)
-            return;
-          }
+      if (mode === "daily" && d?.playing) {
+        const progress = loadProgress(today);
+        if (progress) {
           // Refresh = nastavak: rekonstruiraj stanje iz zapisa.
           const mainDict = await loadDictionary();
           if (cancelledRef.current) return;
           const rep = replayLog(seedRef.current, progress.log, mainDict, { requireOver: false, strict: false });
           if (!rep.ok) {
-            patch({ phase: "error", error: "Spremljena partija je neispravna: " + rep.error });
-            phaseRef.current = "error";
+            clearProgress();
+            setPhase("idle"); // neispravan spremljeni napredak: počni novu partiju
             return;
           }
           gameRef.current = rep.value.state;
@@ -381,6 +371,7 @@ export function useBombGame(mode: Mode, bombRef: RefObject<BombHandle | null>) {
           showSyllable(elapsed, progress.shownAt);
           return;
         }
+        // nezavršena partija bez spremljenog napretka (drugi uređaj, obrisani podaci): start() je odbacuje i počinje novu
       }
       setPhase("idle");
     })();
@@ -395,5 +386,9 @@ export function useBombGame(mode: Mode, bombRef: RefObject<BombHandle | null>) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready, profile?.id, mode, today]);
 
-  return { ui, start, submit, retrySave, restartTraining };
+  /** Nova partija nakon završetka (ili s početnog ekrana). */
+  /** Nova partija NAKON završene: dnevna koristi isti niz slogova tog dana, trening dobiva novi nasumični niz. */
+  const playAgain = mode === "daily" ? start : async () => restartTraining();
+
+  return { ui, start, submit, retrySave, playAgain };
 }

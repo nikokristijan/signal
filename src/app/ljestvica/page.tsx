@@ -12,7 +12,7 @@ const TABS: Array<{ id: LeaderboardScope; label: string }> = [
   { id: "friends", label: "Prijatelji" },
   { id: "daily", label: "Danas" },
   { id: "weekly", label: "Tjedan" },
-  { id: "all", label: "Ukupno" },
+  { id: "all", label: "High score" },
 ];
 
 export default function LeaderboardPage() {
@@ -28,13 +28,13 @@ export default function LeaderboardPage() {
     return () => {
       off = true;
     };
-  }, [repo, profile, scope, today, daily?.state]);
+  }, [repo, profile, scope, today, daily?.gamesToday]);
 
   if (!ready) return <Page><Loading /></Page>;
   if (!profile) return <Page><AuthGate /></Page>;
 
   const me = rows?.find((r) => r.isMe);
-  const played = daily?.state === "finished";
+  const played = (daily?.gamesToday ?? 0) > 0;
 
   return (
     <Page>
@@ -56,7 +56,7 @@ export default function LeaderboardPage() {
         ))}
       </div>
       <p className="mt-3 text-xs text-muted">
-        {scope === "friends" ? "Današnji rezultati tvojih prijatelja." : scope === "daily" ? "Svi igrači, današnja partija." : scope === "weekly" ? "Zbroj bodova ovaj tjedan (od ponedjeljka)." : "Zbroj svih dnevnih partija."}
+        {scope === "friends" ? "Najbolji današnji rezultat tvojih prijatelja." : scope === "daily" ? "Najbolji rezultat svih igrača danas." : scope === "weekly" ? "Najbolji rezultat ovaj tjedan (od ponedjeljka)." : "High score svih vremena: najbolja pojedinačna partija."}
       </p>
 
       <div className="mt-3">
@@ -71,9 +71,9 @@ export default function LeaderboardPage() {
 
       {rows && !me && (
         <p className="mt-3 text-center text-sm text-muted">
-          {played ? "Još nisi na ovoj ljestvici." : (
+          {played && scope !== "daily" && scope !== "friends" ? "Još nisi na ovoj ljestvici." : (
             <>
-              <Link href="/igra" className="font-bold text-ink underline underline-offset-2">Odigraj današnji izazov</Link> da se pojaviš ovdje.
+              <Link href="/igra" className="font-bold text-ink underline underline-offset-2">Odigraj partiju</Link> da se pojaviš ovdje.
             </>
           )}
         </p>

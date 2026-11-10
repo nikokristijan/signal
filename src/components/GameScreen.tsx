@@ -15,10 +15,10 @@ import { Loading } from "./Page";
 import { ResultPanel } from "./ResultPanel";
 
 export function GameScreen({ mode }: { mode: Mode }) {
-  const { ready, profile, number, settings, setSettings } = useBomb();
+  const { ready, profile, number, settings, setSettings, daily } = useBomb();
   const bombRef = useRef<BombHandle>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const { ui, start, submit, retrySave, restartTraining } = useBombGame(mode, bombRef);
+  const { ui, start, submit, retrySave, playAgain } = useBombGame(mode, bombRef);
   const [value, setValue] = useState("");
   const [shaking, setShaking] = useState(false);
   const [inputShaking, setInputShaking] = useState(false);
@@ -46,9 +46,12 @@ export function GameScreen({ mode }: { mode: Mode }) {
     if (ui.phase === "playing" || ui.phase === "exploding") inputRef.current?.focus({ preventScroll: true });
   }, [ui.phase, ui.syllable]);
 
-  // Ponovno pokretanje treninga čisti polje.
+  // Izvan partije (početni ekran, rezultat) tipkovnica se zatvara i polje se čisti.
   useEffect(() => {
-    if (ui.phase === "idle") setValue("");
+    if (ui.phase === "idle" || ui.phase === "done") {
+      setValue("");
+      inputRef.current?.blur();
+    }
   }, [ui.phase]);
 
   if (!ready) return <div className="min-h-dvh"><Loading /></div>;
@@ -72,31 +75,6 @@ export function GameScreen({ mode }: { mode: Mode }) {
           <Loading />
           <p className="-mt-16 text-sm text-muted">Učitavam rječnik…</p>
         </div>
-      </div>
-    );
-  }
-
-  if (ui.phase === "done" && ui.result) {
-    return (
-      <div className="mx-auto min-h-dvh max-w-xl">
-        <TopBar mode={mode} number={number} />
-        <ResultPanel result={ui.result} onAgain={mode === "training" ? restartTraining : undefined} />
-      </div>
-    );
-  }
-
-  if (ui.phase === "blocked") {
-    return (
-      <div className="mx-auto min-h-dvh max-w-xl">
-        <TopBar mode={mode} number={number} />
-        <section className="px-5 py-10 text-center">
-          <h1 className="text-2xl font-extrabold">Partija je već započeta</h1>
-          <p className="mt-3 text-muted">Današnji rangirani pokušaj je počeo na drugom uređaju ili su podaci preglednika obrisani, pa se ne može nastaviti. Svaki dan postoji samo jedan pokušaj.</p>
-          <div className="mt-6 flex flex-col gap-2 sm:flex-row">
-            <Link href="/trening" className="btn-primary flex-1">Igraj trening</Link>
-            <Link href="/" className="btn-ghost flex-1">Početna</Link>
-          </div>
-        </section>
       </div>
     );
   }
@@ -202,6 +180,21 @@ export function GameScreen({ mode }: { mode: Mode }) {
         </div>
       </form>
 
+      {/* rezultat: preklop preko igre; input ostaje u DOM-u pa „Igraj ponovno" može odmah otvoriti tipkovnicu (iOS) */}
+      {ui.phase === "done" && ui.result && (
+        <div className="absolute inset-0 z-20 overflow-y-auto bg-paper">
+          <TopBar mode={mode} number={number} />
+          <ResultPanel
+            result={ui.result}
+            info={ui.info}
+            onAgain={() => {
+              inputRef.current?.focus({ preventScroll: true });
+              void playAgain();
+            }}
+          />
+        </div>
+      )}
+
       {/* početni ekran: input je već u DOM-u pa se može fokusirati unutar geste klika (iOS) */}
       {ui.phase === "idle" && (
         <div className="absolute inset-0 z-20 flex flex-col bg-paper">
@@ -220,12 +213,17 @@ export function GameScreen({ mode }: { mode: Mode }) {
               data-testid="start"
               onClick={() => {
                 inputRef.current?.focus({ preventScroll: true });
-                void start();
+                void start(); // prva partija (u treningu poštuje ?seed=)
               }}
             >
               Kreni
             </button>
-            <p className="mt-3 text-xs text-muted">{mode === "daily" ? "Jedan rangirani pokušaj dnevno. Refresh te vraća u partiju." : "Trening ne ide na ljestvicu."}</p>
+            {mode === "daily" && daily?.best ? (
+              <p className="mt-4 text-sm text-muted" data-testid="idle-best">
+                Najbolje danas: <b className="text-ink">{daily.best.score}</b> · {daily.gamesToday} {daily.gamesToday === 1 ? "partija" : "partija"}
+              </p>
+            ) : null}
+            <p className="mt-2 text-xs text-muted">{mode === "daily" ? "Igraj koliko god puta želiš: računa se tvoj najbolji rezultat." : "Trening ne ide na ljestvicu."}</p>
           </section>
         </div>
       )}

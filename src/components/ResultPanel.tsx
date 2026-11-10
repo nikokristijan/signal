@@ -2,14 +2,21 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Check, Clock, Share2, Trophy } from "lucide-react";
+import { Check, Clock, RotateCcw, Share2, Trophy } from "lucide-react";
 import { shareText, wordsLabel } from "@/lib/game/share";
-import type { GameResult, LeaderboardEntry } from "@/lib/game/types";
+import type { FinishInfo, GameResult, LeaderboardEntry } from "@/lib/game/types";
 import { useBomb } from "./BombProvider";
 import { Countdown } from "./Countdown";
 import { LeaderboardTable } from "./LeaderboardTable";
 
-export function ResultPanel({ result, onAgain }: { result: GameResult; onAgain?: () => void }) {
+interface Props {
+  result: GameResult;
+  /** Samo za dnevne partije. */
+  info: FinishInfo | null;
+  onAgain: () => void;
+}
+
+export function ResultPanel({ result, info, onAgain }: Props) {
   const { repo, today } = useBomb();
   const [copied, setCopied] = useState(false);
   const [friends, setFriends] = useState<LeaderboardEntry[] | null>(null);
@@ -22,7 +29,7 @@ export function ResultPanel({ result, onAgain }: { result: GameResult; onAgain?:
     return () => {
       off = true;
     };
-  }, [repo, today, daily]);
+  }, [repo, today, daily, result.id]);
 
   async function share() {
     const text = shareText(result, window.location.origin);
@@ -51,6 +58,24 @@ export function ResultPanel({ result, onAgain }: { result: GameResult; onAgain?:
       </p>
       <p className="label mt-1">bodova</p>
 
+      {daily && info && (
+        <div className="mt-3 flex min-h-[28px] justify-center" data-testid="best-info">
+          {info.allTimeBest && info.result.score > 0 ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-signal-tint px-3 py-1 text-sm font-semibold text-signal-dark" data-testid="badge-highscore">
+              <Trophy size={15} aria-hidden /> Novi high score!
+            </span>
+          ) : info.dayBest && info.result.score > 0 ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-signal-tint px-3 py-1 text-sm font-semibold text-signal-dark" data-testid="badge-daybest">
+              <Check size={15} aria-hidden /> Novi najbolji rezultat danas
+            </span>
+          ) : (
+            <span className="text-sm text-muted" data-testid="best-today">
+              Najbolje danas: <b className="text-ink">{info.bestToday}</b>
+            </span>
+          )}
+        </div>
+      )}
+
       <dl className="mt-5 grid grid-cols-3 gap-2">
         <div className="tile px-2 py-3">
           <dt className="label">Riječi</dt>
@@ -75,34 +100,34 @@ export function ResultPanel({ result, onAgain }: { result: GameResult; onAgain?:
         </div>
       </dl>
 
-      {daily ? (
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-          <button className="btn-primary flex-1" onClick={share} data-testid="share">
-            {copied ? <Check size={18} aria-hidden /> : <Share2 size={18} aria-hidden />}
-            {copied ? "Kopirano" : "Podijeli rezultat"}
-          </button>
-          <Link href="/ljestvica" className="btn-ghost flex-1" data-testid="view-leaderboard">
-            <Trophy size={18} aria-hidden /> Ljestvica
-          </Link>
-        </div>
-      ) : (
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-          <button className="btn-primary flex-1" onClick={onAgain} data-testid="again">
-            Igraj ponovno
-          </button>
-          <Link href="/" className="btn-ghost flex-1">
+      <div className="mt-5 flex flex-col gap-2">
+        <button className="btn-primary btn-lg w-full" onClick={onAgain} data-testid="again">
+          <RotateCcw size={18} aria-hidden /> Igraj ponovno
+        </button>
+        {daily ? (
+          <div className="grid grid-cols-2 gap-2">
+            <button className="btn-ghost" onClick={share} data-testid="share">
+              {copied ? <Check size={18} aria-hidden /> : <Share2 size={18} aria-hidden />}
+              {copied ? "Kopirano" : "Podijeli"}
+            </button>
+            <Link href="/ljestvica" className="btn-ghost" data-testid="view-leaderboard">
+              <Trophy size={18} aria-hidden /> Ljestvica
+            </Link>
+          </div>
+        ) : (
+          <Link href="/" className="btn-ghost">
             Početna
           </Link>
-        </div>
-      )}
+        )}
+      </div>
 
       {daily && (
         <div className="mt-6 text-left">
-          <h2 className="label mb-2">Prijatelji danas</h2>
+          <h2 className="label mb-2">Prijatelji danas (najbolji rezultat)</h2>
           {friends === null ? null : friends.length <= 1 ? (
             <p className="tile px-4 py-4 text-sm text-muted">
               Još nema prijatelja s današnjim rezultatom.{" "}
-              <Link href="/prijatelji" className="font-bold text-signal underline underline-offset-2">
+              <Link href="/prijatelji" className="font-semibold text-ink underline underline-offset-2">
                 Dodaj prijatelje
               </Link>
               .
@@ -113,9 +138,11 @@ export function ResultPanel({ result, onAgain }: { result: GameResult; onAgain?:
         </div>
       )}
 
-      <p className="mt-6 flex items-center justify-center gap-1.5 text-sm text-muted">
-        <Clock size={15} aria-hidden /> Sljedeći izazov za <Countdown className="font-bold text-ink" />
-      </p>
+      {daily && (
+        <p className="mt-6 flex items-center justify-center gap-1.5 text-sm text-muted">
+          <Clock size={15} aria-hidden /> Novi niz slogova za <Countdown className="font-semibold text-ink" />
+        </p>
+      )}
     </section>
   );
 }

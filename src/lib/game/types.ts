@@ -46,12 +46,25 @@ export interface GameSummary {
   durationMs: number;
 }
 
-/** Spremljeni rezultat jedne dnevne partije. */
+/** Spremljeni rezultat jedne završene partije. Partija se može igrati koliko god puta; računa se najbolja. */
 export interface GameResult extends GameSummary {
+  id: string;
   mode: Mode;
   date: string; // YYYY-MM-DD (Europe/Zagreb)
   number: number;
   finishedAt: string;
+}
+
+/** Što se zna odmah nakon završetka partije. */
+export interface FinishInfo {
+  result: GameResult;
+  /** Najbolji rezultat danas (uključujući ovu partiju). */
+  bestToday: number;
+  /** Ova partija je novi najbolji rezultat DANAS. */
+  dayBest: boolean;
+  /** Ova partija je novi najbolji rezultat svih vremena (high score). */
+  allTimeBest: boolean;
+  gamesToday: number;
 }
 
 export type WordRejection = "empty" | "no-syllable" | "not-in-dictionary" | "used" | "invalid";
@@ -71,6 +84,7 @@ export interface Profile {
   email?: string | null;
 }
 
+/** friends = današnji najbolji među prijateljima; daily/weekly = najbolji rezultat tog razdoblja; all = high score svih vremena. */
 export type LeaderboardScope = "friends" | "daily" | "weekly" | "all";
 
 export interface LeaderboardEntry {
@@ -100,6 +114,7 @@ export interface FriendEntry {
   avatar: AvatarSpec;
   todayWords: number | null;
   todayScore: number | null;
-  totalScore: number;
+  /** Najbolji rezultat svih vremena (high score). */
+  bestScore: number;
   simulated?: boolean;
 }

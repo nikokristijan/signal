@@ -79,6 +79,7 @@ export function mockDay(user: MockUser, dateKey: string): MockDay | null {
   return { words, score: Math.round(words * perWord) };
 }
 
+/** Najbolji dan u razdoblju (high score): bodovi i riječi te partije, te koliko je dana igrao. */
 export function mockRange(user: MockUser, from: string, to: string): { score: number; words: number; played: number } {
   let score = 0;
   let words = 0;
@@ -86,9 +87,11 @@ export function mockRange(user: MockUser, from: string, to: string): { score: nu
   for (let d = from; d <= to; d = addDays(d, 1)) {
     const r = mockDay(user, d);
     if (r) {
-      score += r.score;
-      words += r.words;
       played++;
+      if (r.score > score || (r.score === score && r.words > words)) {
+        score = r.score;
+        words = r.words;
+      }
     }
   }
   return { score, words, played };

@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createBrowser } from "../supabase/browser";
 import { challengeNumber } from "../game/dates";
-import type { AvatarSpec, FriendEntry, GameResult, Ghost, LeaderboardEntry, LeaderboardScope, LogEntry, Profile, Result } from "../game/types";
+import type { AvatarSpec, FinishInfo, FriendEntry, GameResult, Ghost, LeaderboardEntry, LeaderboardScope, LogEntry, Profile, Result } from "../game/types";
 import type { BombRepository, DailyStatus } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
@@ -81,30 +81,31 @@ export class SupabaseRepository implements BombRepository {
 
   async getDaily(date: string): Promise<DailyStatus> {
     const r = await this.api<DailyStatus>(`/api/igra/stanje?date=${encodeURIComponent(date)}`);
-    if (!r.ok) return { date, number: challengeNumber(date), state: "new" };
+    if (!r.ok) return { date, number: challengeNumber(date), playing: false, best: null, gamesToday: 0 };
     return r.body;
   }
 
-  async startDaily(_date: string) {
-    const r = await this.api<{ startedAt: number; state: DailyStatus["state"]; result?: GameResult; error?: string }>("/api/igra/start", { method: "POST" });
+  async startDaily(_date: string, resume: boolean) {
+    const r = await this.api<{ startedAt: number; resumed: boolean; error?: string }>("/api/igra/start", { method: "POST", body: JSON.stringify({ resume }) });
     if (!r.ok) return { ok: false as const, error: r.body?.error ?? "Partija se nije mogla započeti." };
-    return { ok: true as const, value: r.body };
+    return { ok: true as const, value: { startedAt: r.body.startedAt, resumed: r.body.resumed } };
   }
 
-  async finishDaily(date: string, log: LogEntry[]): Promise<Result<GameResult>> {
-    const r = await this.api<{ result?: GameResult; error?: string }>("/api/igra/kraj", { method: "POST", body: JSON.stringify({ date, log }) });
+  async finishDaily(date: string, log: LogEntry[]): Promise<Result<FinishInfo>> {
+    const r = await this.api<FinishInfo & { error?: string }>("/api/igra/kraj", { method: "POST", body: JSON.stringify({ date, log }) });
     if (!r.ok || !r.body?.result) return { ok: false, error: r.body?.error ?? "Rezultat se nije mogao spremiti." };
-    return { ok: true, value: r.body.result };
+    return { ok: true, value: r.body };
   }
 
   async listResults(): Promise<GameResult[]> {
     const { data, error } = await this.client
       .from("games")
-      .select("challenge_date, challenge_number, score, words, max_combo, longest, word_list, booms, duration_ms, finished_at")
+      .select("id, challenge_date, challenge_number, score, words, max_combo, longest, word_list, booms, duration_ms, finished_at")
       .eq("status", "finished")
-      .order("challenge_date", { ascending: false });
+      .order("finished_at", { ascending: false });
     if (error) throw new Error(error.message);
     return (data ?? []).map((g: any) => ({
+      id: g.id,
       mode: "daily" as const,
       date: g.challenge_date,
       number: g.challenge_number,
@@ -127,7 +128,7 @@ export class SupabaseRepository implements BombRepository {
       avatar: { color: r.avatar_color },
       todayWords: r.today_words ?? null,
       todayScore: r.today_points ?? null,
-      totalScore: Number(r.total_points),
+      bestScore: Number(r.best_points),
     }));
   }
 
@@ -136,7 +137,7 @@ export class SupabaseRepository implements BombRepository {
       const rows = await this.rpc<any[]>("add_friend", { p_username: username.replace(/^@/, "") });
       const friends = await this.listFriends(date);
       const f = friends.find((x) => x.userId === rows[0].user_id);
-      return { ok: true, value: f ?? { userId: rows[0].user_id, username: rows[0].username, avatar: { color: rows[0].avatar_color }, todayWords: null, todayScore: null, totalScore: 0 } };
+      return { ok: true, value: f ?? { userId: rows[0].user_id, username: rows[0].username, avatar: { color: rows[0].avatar_color }, todayWords: null, todayScore: null, bestScore: 0 } };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : "Prijatelj se nije mogao dodati." };
     }

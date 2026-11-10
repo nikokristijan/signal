@@ -1,8 +1,10 @@
 import { AVATAR_KEYS } from "../avatars";
+import type { Dictionary } from "../dict/dictionary";
 import { loadDictionary } from "../dict/loader";
 import { challengeNumber, dailySeed, LAUNCH_DATE } from "../game/dates";
 import { checkElapsed, replayLog } from "../game/replay";
-import type { AvatarSpec, FriendEntry, GameResult, Ghost, LeaderboardEntry, LeaderboardScope, LogEntry, Profile, Result } from "../game/types";
+import { better, bestOf } from "../game/results";
+import type { AvatarSpec, FinishInfo, FriendEntry, GameResult, Ghost, LeaderboardEntry, LeaderboardScope, LogEntry, Profile, Result } from "../game/types";
 import { DEFAULT_FRIENDS, MOCK_USERS, mockDay, mockRange, rangeFor } from "./mock-community";
 import type { BombRepository, DailyStatus } from "./types";
 
@@ -11,9 +13,10 @@ export const USERNAME_RE = /^[a-z0-9_]{3,16}$/;
 
 interface Stored {
   profile: Profile | null;
-  results: Record<string, GameResult>;
-  /** Kad je počela ranglirana partija za dan (ms). Samo jedan pokušaj dnevno. */
-  started: Record<string, number>;
+  /** Sve završene partije (koliko god ih bilo). */
+  games: GameResult[];
+  /** Početak nezavršene partije po danu (ms). */
+  playing: Record<string, number>;
   friends: string[];
 }
 
@@ -46,17 +49,27 @@ export class LocalRepository implements BombRepository {
   readonly mode = "local" as const;
   private storage = createStorage();
 
+  /** `dictLoader` se može zamijeniti u testovima (u Nodeu nema fetch-a na /dict/hr.bin.gz). */
+  constructor(private dictLoader: () => Promise<Dictionary> = loadDictionary) {}
+
   private load(): Stored {
     const raw = this.storage.read();
     if (raw) {
       try {
-        const p = JSON.parse(raw) as Stored;
-        return { profile: p.profile ?? null, results: p.results ?? {}, started: p.started ?? {}, friends: p.friends ?? [...DEFAULT_FRIENDS] };
+        const p = JSON.parse(raw) as Partial<Stored> & { results?: Record<string, GameResult>; started?: Record<string, number> };
+        // starija inačica (jedna partija po danu): preuzmi rezultate
+        const legacy = p.results ? Object.values(p.results).map((r) => ({ ...r, id: r.id ?? uuid() })) : [];
+        return {
+          profile: p.profile ?? null,
+          games: p.games ?? legacy,
+          playing: p.playing ?? {},
+          friends: p.friends ?? [...DEFAULT_FRIENDS],
+        };
       } catch {
         /* oštećeno: kreni ispočetka */
       }
     }
-    return { profile: null, results: {}, started: {}, friends: [...DEFAULT_FRIENDS] };
+    return { profile: null, games: [], playing: {}, friends: [...DEFAULT_FRIENDS] };
   }
 
   private save(s: Stored) {
@@ -91,38 +104,49 @@ export class LocalRepository implements BombRepository {
 
   async getDaily(date: string): Promise<DailyStatus> {
     const s = this.load();
-    const number = challengeNumber(date);
-    if (s.results[date]) return { date, number, state: "finished", result: s.results[date], startedAt: s.started[date] };
-    if (s.started[date]) return { date, number, state: "playing", startedAt: s.started[date] };
-    return { date, number, state: "new" };
+    const today = s.games.filter((g) => g.date === date);
+    return { date, number: challengeNumber(date), playing: Boolean(s.playing[date]), startedAt: s.playing[date], best: bestOf(today), gamesToday: today.length };
   }
 
-  async startDaily(date: string) {
+  async startDaily(date: string, resume: boolean) {
     const s = this.load();
-    if (s.results[date]) return { ok: true as const, value: { startedAt: s.started[date] ?? 0, state: "finished" as const, result: s.results[date] } };
-    const startedAt = s.started[date] ?? Date.now();
-    if (!s.started[date]) this.save({ ...s, started: { ...s.started, [date]: startedAt } });
-    return { ok: true as const, value: { startedAt, state: "playing" as const } };
+    if (resume && s.playing[date]) return { ok: true as const, value: { startedAt: s.playing[date], resumed: true } };
+    const startedAt = Date.now();
+    this.save({ ...s, playing: { ...s.playing, [date]: startedAt } });
+    return { ok: true as const, value: { startedAt, resumed: false } };
   }
 
   /** Ovdje lokalni „server": isti replay i iste provjere kao API ruta u Supabase načinu. */
-  async finishDaily(date: string, log: LogEntry[]): Promise<Result<GameResult>> {
+  async finishDaily(date: string, log: LogEntry[]): Promise<Result<FinishInfo>> {
     const s = this.load();
-    if (s.results[date]) return { ok: true, value: s.results[date] };
-    const startedAt = s.started[date];
-    if (!startedAt) return { ok: false, error: "Partija nije započeta." };
-    const dict = await loadDictionary();
+    const startedAt = s.playing[date];
+    if (!startedAt) return { ok: false, error: "Nema aktivne partije." };
+    const dict = await this.dictLoader();
     const rep = replayLog(dailySeed(date), log, dict);
     if (!rep.ok) return rep;
     const elapsed = checkElapsed(rep.value.summary.durationMs, startedAt, Date.now());
     if (!elapsed.ok) return elapsed;
-    const result: GameResult = { ...rep.value.summary, mode: "daily", date, number: challengeNumber(date), finishedAt: new Date().toISOString() };
-    this.save({ ...s, results: { ...s.results, [date]: result } });
-    return { ok: true, value: result };
+
+    const result: GameResult = { ...rep.value.summary, id: uuid(), mode: "daily", date, number: challengeNumber(date), finishedAt: new Date().toISOString() };
+    const todayBefore = s.games.filter((g) => g.date === date);
+    const bestBefore = bestOf(todayBefore);
+    const allBefore = bestOf(s.games);
+    const { [date]: _done, ...playing } = s.playing;
+    this.save({ ...s, games: [...s.games, result], playing });
+    return {
+      ok: true,
+      value: {
+        result,
+        bestToday: Math.max(result.score, bestBefore?.score ?? 0),
+        dayBest: !bestBefore || better(result, bestBefore),
+        allTimeBest: !allBefore || better(result, allBefore),
+        gamesToday: todayBefore.length + 1,
+      },
+    };
   }
 
   async listResults() {
-    return Object.values(this.load().results).sort((a, b) => b.date.localeCompare(a.date));
+    return [...this.load().games].sort((a, b) => b.finishedAt.localeCompare(a.finishedAt));
   }
 
   private friendEntry(u: (typeof MOCK_USERS)[number], date: string): FriendEntry {
@@ -133,7 +157,7 @@ export class LocalRepository implements BombRepository {
       avatar: u.avatar,
       todayWords: today?.words ?? null,
       todayScore: today?.score ?? null,
-      totalScore: mockRange(u, LAUNCH_DATE, date).score,
+      bestScore: mockRange(u, LAUNCH_DATE, date).score,
       simulated: true,
     };
   }
@@ -177,7 +201,8 @@ export class LocalRepository implements BombRepository {
     const s = this.load();
     const me = s.profile;
     const rows: Array<Omit<LeaderboardEntry, "rank">> = [];
-    const results = Object.values(s.results);
+
+    const myBest = (from: string, to: string) => bestOf(s.games.filter((g) => g.date >= from && g.date <= to));
 
     if (scope === "friends") {
       for (const n of s.friends) {
@@ -185,25 +210,17 @@ export class LocalRepository implements BombRepository {
         const d = u && mockDay(u, date);
         if (u && d) rows.push({ userId: u.id, username: u.username, avatar: u.avatar, points: d.score, words: d.words, isMe: false, simulated: true });
       }
-      const mine = s.results[date];
+      const mine = myBest(date, date);
       if (me && mine) rows.push({ userId: me.id, username: me.username, avatar: me.avatar, points: mine.score, words: mine.words, isMe: true });
     } else {
+      // Danas / ovaj tjedan / ukupno: NAJBOLJI pojedinačni rezultat (high score) u tom razdoblju.
       const [from, to] = rangeFor(scope, date);
       for (const u of MOCK_USERS) {
         const r = mockRange(u, from, to);
         if (r.played > 0) rows.push({ userId: u.id, username: u.username, avatar: u.avatar, points: r.score, words: r.words, isMe: false, simulated: true });
       }
-      const mine = results.filter((r) => r.date >= from && r.date <= to);
-      if (me && mine.length) {
-        rows.push({
-          userId: me.id,
-          username: me.username,
-          avatar: me.avatar,
-          points: mine.reduce((a, r) => a + r.score, 0),
-          words: mine.reduce((a, r) => a + r.words, 0),
-          isMe: true,
-        });
-      }
+      const mine = myBest(from, to);
+      if (me && mine) rows.push({ userId: me.id, username: me.username, avatar: me.avatar, points: mine.score, words: mine.words, isMe: true });
     }
 
     rows.sort((a, b) => b.points - a.points || b.words - a.words || a.username.localeCompare(b.username));
@@ -217,3 +234,4 @@ export class LocalRepository implements BombRepository {
     });
   }
 }
+

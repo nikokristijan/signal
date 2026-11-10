@@ -19,9 +19,9 @@ export function FriendsToday() {
     return () => {
       off = true;
     };
-  }, [repo, today, daily?.state]);
+  }, [repo, today, daily?.gamesToday]);
 
-  const sorted = rows ? [...rows].sort((a, b) => (b.todayScore ?? -1) - (a.todayScore ?? -1) || b.totalScore - a.totalScore) : null;
+  const sorted = rows ? [...rows].sort((a, b) => (b.todayScore ?? -1) - (a.todayScore ?? -1) || b.bestScore - a.bestScore) : null;
 
   return (
     <section aria-labelledby="fr-h" className="tile text-left" data-testid="friends-today">

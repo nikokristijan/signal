@@ -37,19 +37,24 @@ async function newUser(name: string, username?: string) {
   ids[name] = u.id;
 }
 
-async function play(user: string, date: string, score: number, words: number, combo = 3) {
-  await db.query("insert into public.games (user_id, challenge_date, challenge_number) values ($1, $2, 1)", [ids[user], date]);
+/** Odigra (i završi) jednu partiju: server upisuje rezultat. Vraća id partije. */
+async function play(user: string, date: string, score: number, words: number, combo = 3): Promise<string> {
+  const [g] = await q<{ id: string }>("insert into public.games (user_id, challenge_date, challenge_number) values ($1, $2, 1) returning id", [ids[user], date]);
   await as(
     null,
-    () => db.query("select public.bomba_record_result($1, $2, $3, $4, $5, 'riječ', array['riječ'], 2, 20000, '[]'::jsonb)", [ids[user], date, score, words, combo]),
+    () => db.query("select public.bomba_record_result($1, $2, $3, $4, 'riječ', array['riječ'], 2, 20000, '[]'::jsonb, $5)", [g.id, score, words, combo, `hash-${g.id}`]),
     "service_role",
   );
+  return g.id;
 }
 
 beforeAll(async () => {
   db = new PGlite();
   await db.exec(PRELUDE);
-  await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations/0001_init.sql"), "utf8"));
+  // Primijeni migracije redom, kao na pravom Supabaseu.
+  for (const f of fs.readdirSync(path.join(__dirname, "../supabase/migrations")).sort()) {
+    await db.exec(fs.readFileSync(path.join(__dirname, "../supabase/migrations", f), "utf8"));
+  }
   for (const n of ["ana", "ivo", "mia", "luka"]) await newUser(n);
 }, 60_000);
 
@@ -116,7 +121,9 @@ describe("RLS: klijent ne može upisati ni vidjeti tuđe", () => {
   });
   it("bomba_record_result smije pozvati samo service_role", async () => {
     for (const role of ["authenticated", "anon"] as const) {
-      await expect(as("ivo", () => db.query("select public.bomba_record_result($1, '2026-11-02', 9999, 99, 9, 'x', array['x'], 0, 1, '[]'::jsonb)", [ids.ivo]), role)).rejects.toThrow(/permission denied/i);
+      await expect(
+        as("ivo", () => db.query("select public.bomba_record_result($1, 9999, 99, 9, 'x', array['x'], 0, 1, '[]'::jsonb, 'h')", [ids.ivo]), role),
+      ).rejects.toThrow(/permission denied/i);
     }
   });
   it("neprijavljeni (anon) ne smije zvati ljestvicu ni prijatelje", async () => {
@@ -125,22 +132,41 @@ describe("RLS: klijent ne može upisati ni vidjeti tuđe", () => {
   });
 });
 
-describe("upis rezultata i nizovi", () => {
-  it("bomba_record_result zaključava partiju, upisuje score i niz; drugi put baca grešku", async () => {
-    const g = await q<{ status: string; score: number; words: number }>("select status, score, words from public.games where user_id = $1 and challenge_date = '2026-11-01'", [ids.ivo]);
-    expect(g[0]).toMatchObject({ status: "finished", score: 300, words: 15 });
+describe("upis rezultata, više partija i nizovi", () => {
+  it("bomba_record_result zaključava partiju i upisuje score; drugi put baca grešku", async () => {
+    const id = await play("ivo", "2026-11-02", 250, 12);
+    const g = await q<{ status: string; score: number; words: number; log_hash: string }>("select status, score, words, log_hash from public.games where id = $1", [id]);
+    expect(g[0]).toMatchObject({ status: "finished", score: 250, words: 12 });
+    expect(g[0].log_hash).toBe(`hash-${id}`);
     await expect(
-      as(null, () => db.query("select public.bomba_record_result($1, '2026-11-01', 5, 1, 1, 'x', array['x'], 0, 1, '[]'::jsonb)", [ids.ivo]), "service_role"),
+      as(null, () => db.query("select public.bomba_record_result($1, 5, 1, 1, 'x', array['x'], 0, 1, '[]'::jsonb, 'h')", [id]), "service_role"),
     ).rejects.toThrow(/Nema aktivne partije/);
-    expect((await q<{ points: number }>("select points from public.scores where user_id = $1", [ids.ivo])).length).toBe(1);
+    expect((await q("select * from public.scores where game_id = $1", [id])).length).toBe(1);
   });
-  it("jedan rangirani pokušaj dnevno (unique po igraču i danu)", async () => {
-    await expect(db.query("insert into public.games (user_id, challenge_date, challenge_number) values ($1, '2026-11-01', 3)", [ids.ivo])).rejects.toThrow(/unique|duplicate/i);
+  it("igrač može igrati koliko god puta: više partija istog dana, svaka ima svoj red u scores", async () => {
+    const before = (await q("select 1 from public.scores where user_id = $1 and challenge_date = '2026-11-03'", [ids.ivo])).length;
+    await play("ivo", "2026-11-03", 100, 5);
+    await play("ivo", "2026-11-03", 400, 20);
+    await play("ivo", "2026-11-03", 150, 8);
+    const rows = await q<{ points: number }>("select points from public.scores where user_id = $1 and challenge_date = '2026-11-03' order by points", [ids.ivo]);
+    expect(rows.length).toBe(before + 3);
+    expect(rows.map((r) => r.points)).toEqual([100, 150, 400]);
   });
-  it("niz: uzastopni dani povećavaju, propušteni dan resetira", async () => {
+  it("istovremeno može postojati samo jedna nezavršena partija ne vrijedi na razini baze, ali status abandoned je dopušten", async () => {
+    const [g] = await q<{ id: string }>("insert into public.games (user_id, challenge_date, challenge_number) values ($1, '2026-11-04', 1) returning id", [ids.ivo]);
+    await db.query("update public.games set status = 'abandoned' where id = $1", [g.id]);
+    expect((await q<{ status: string }>("select status from public.games where id = $1", [g.id]))[0].status).toBe("abandoned");
+    await expect(db.query("update public.games set status = 'nesto' where id = $1", [g.id])).rejects.toThrow(/check/i);
+    // odbačena partija se ne može završiti
+    await expect(
+      as(null, () => db.query("select public.bomba_record_result($1, 9, 1, 1, 'x', array['x'], 0, 1, '[]'::jsonb, 'h')", [g.id]), "service_role"),
+    ).rejects.toThrow(/Nema aktivne partije/);
+  });
+  it("niz dana: uzastopni dani povećavaju, propušteni dan resetira, druga partija istog dana ne mijenja niz", async () => {
     await play("luka", "2026-11-05", 100, 5);
     await play("luka", "2026-11-06", 100, 5);
     await play("luka", "2026-11-07", 100, 5);
+    await play("luka", "2026-11-07", 90, 4); // druga partija istog dana
     let [s] = await q<{ current_streak: number; longest_streak: number }>("select * from public.streaks where user_id = $1", [ids.luka]);
     expect(s).toMatchObject({ current_streak: 3, longest_streak: 3 });
     await play("luka", "2026-11-09", 100, 5);
@@ -149,34 +175,45 @@ describe("upis rezultata i nizovi", () => {
   });
 });
 
-describe("ljestvice", () => {
+describe("ljestvice: gleda se NAJBOLJI rezultat (high score), ne zbroj", () => {
   beforeAll(async () => {
     // 2026-11-10 je utorak; tjedan počinje 2026-11-09
-    await play("ana", "2026-11-10", 500, 30);
+    await play("ana", "2026-11-10", 120, 10);
+    await play("ana", "2026-11-10", 500, 30); // najbolja danas
+    await play("ana", "2026-11-10", 80, 6);
     await play("ivo", "2026-11-10", 800, 40);
     await play("mia", "2026-11-10", 800, 40);
     await play("luka", "2026-11-10", 300, 20);
     await play("ana", "2026-11-09", 400, 25);
+    await play("ana", "2026-11-09", 350, 22);
   });
   const lb = (scope: string, uid = "ana") => as(uid, () => q<{ rank: string; username: string; points: string; words: string }>("select * from public.leaderboard($1, '2026-11-10')", [scope]));
 
-  it("dnevna: poredak po bodovima, istovjetni rezultati dijele mjesto", async () => {
+  it("dnevna: svaki igrač jednom, s najboljom partijom; istovjetni rezultati dijele mjesto", async () => {
     const rows = await lb("daily");
     expect(rows.map((r) => Number(r.points))).toEqual([800, 800, 500, 300]);
     expect(rows.map((r) => Number(r.rank))).toEqual([1, 1, 3, 4]);
+    expect(rows.filter((r) => r.username === "ana_h")).toHaveLength(1); // 3 partije, jedan redak
   });
-  it("tjedna zbraja od ponedjeljka, ukupna sve dane", async () => {
+  it("tjedna = najbolja partija od ponedjeljka (NE zbroj); ukupna = high score svih vremena", async () => {
     const week = await lb("weekly");
-    expect(Number(week.find((r) => r.username === "ana_h")?.points)).toBe(900); // 500 + 400
-    expect(week.some((r) => r.username.startsWith("igrac") && Number(r.points) === 800)).toBe(true); // ivo ne uključuje 11-01 (300)
+    expect(Number(week.find((r) => r.username === "ana_h")?.points)).toBe(500); // ne 500 + 400 + …
     const all = await lb("all");
-    expect(Math.max(...all.map((r) => Number(r.points)))).toBe(1100); // ivo: 300 + 800
+    expect(Number(all.find((r) => r.username === "ana_h")?.points)).toBe(500);
+    // ivo: 800 danas, 400 (03.11.), 300 (01.11.) → high score 800, ne zbroj
+    expect(Math.max(...all.map((r) => Number(r.points)))).toBe(800);
   });
-  it("prijatelji: samo ti i prijatelji, samo današnji rezultati", async () => {
+  it("kod jednakih bodova pobjeđuje partija s više riječi", async () => {
+    await play("luka", "2026-11-10", 500, 35); // ista točka kao ana (500), ali više riječi
+    const rows = await lb("daily");
+    const order = rows.filter((r) => Number(r.points) === 500).map((r) => Number(r.words));
+    expect(order).toEqual([35, 30]);
+  });
+  it("prijatelji: samo ti i prijatelji, samo današnji najbolji rezultati", async () => {
     const ivoName = (await q<{ username: string }>("select username from public.profiles where id = $1", [ids.ivo]))[0].username;
     await as("ana", () => db.query("select * from public.add_friend($1)", [ivoName]));
     const rows = await lb("friends");
-    expect(rows.map((r) => Number(r.points)).sort((a, b) => a - b)).toEqual([500, 800]); // ana i ivo, ne mia/luka
+    expect(rows.map((r) => Number(r.points)).sort((a, b) => a - b)).toEqual([500, 800]); // ana (najbolja od 3) i ivo; ne mia/luka
   });
   it("ljestvica ne otkriva ništa osim agregata (nema e-maila ni id-ova partija)", async () => {
     const rows = await lb("all");
@@ -188,12 +225,12 @@ describe("prijatelji", () => {
   it("add_friend je obostran; „duhovi“ i lista prijatelja daju današnje rezultate", async () => {
     const ghosts = await as("ana", () => q<{ username: string; words: number; points: number }>("select * from public.friends_today('2026-11-10')"));
     expect(ghosts).toHaveLength(1);
-    expect(ghosts[0]).toMatchObject({ words: 40, points: 800 });
+    expect(ghosts[0]).toMatchObject({ words: 40, points: 800 }); // najbolja današnja partija prijatelja
     const back = await as("ivo", () => q<{ username: string }>("select * from public.friends_today('2026-11-10')"));
     expect(back[0].username).toBe("ana_h"); // obostrano
-    const list = await as("ana", () => q<{ today_points: number; total_points: string }>("select * from public.list_friends('2026-11-10')"));
+    const list = await as("ana", () => q<{ today_points: number; best_points: number }>("select * from public.list_friends('2026-11-10')"));
     expect(list[0].today_points).toBe(800);
-    expect(Number(list[0].total_points)).toBe(1100);
+    expect(Number(list[0].best_points)).toBe(800); // high score, ne zbroj
   });
   it("odbija nepostojećeg, sebe i duplikat", async () => {
     const ivo = (await q<{ username: string }>("select username from public.profiles where id = $1", [ids.ivo]))[0].username;
