@@ -24,13 +24,13 @@ function thumbUrl(def) {
 }
 
 async function download(url, file) {
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 20; i++) {
     const r = await fetch(url, { headers: { "User-Agent": UA } });
     if (r.ok) {
       await fs.writeFile(file, Buffer.from(await r.arrayBuffer()));
       return;
     }
-    const wait = Math.max(Number(r.headers.get("retry-after")) || 0, 8 * (i + 1)) * 1000;
+    const wait = Math.max(Number(r.headers.get("retry-after")) || 0, Math.min(8 * (i + 1), 45)) * 1000;
     if (wait > 120_000) throw new Error(`rate limited for ${wait / 1000}s: ${url}`);
     console.error(`  ${r.status} - waiting ${wait / 1000}s`);
     await sleep(wait);
@@ -40,7 +40,9 @@ async function download(url, file) {
 
 await fs.mkdir(path.join(root, ".photo-cache"), { recursive: true });
 
+const failed = [];
 for (const def of defs) {
+  try {
   if (only.length && !only.includes(def.slug)) continue;
   if (!def.source?.url) {
     console.log("skip (no source)", def.slug);
@@ -85,4 +87,9 @@ for (const def of defs) {
       .toFile(path.join(dir, `stage-${i + 1}.webp`));
   }
   console.log("built", def.slug, `${W}x${H}`, "frame", `${fw}x${fh}`, "zoom1", zooms[0].toFixed(1));
+  } catch (e) {
+    console.error("FAILED", def.slug, e.message);
+    failed.push(def.slug);
+  }
 }
+if (failed.length) console.error("Failed:", failed.join(" "));
