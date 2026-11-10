@@ -50,6 +50,18 @@
     "focus": {
       "x": 0.5,
       "y": 0.5
+    },
+    "source": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f2/Pineapple_Supply_Co._2016-02-12_%28Unsplash%29.jpg",
+      "width": 6000,
+      "height": 4000
+    },
+    "credit": {
+      "title": "File:Pineapple Supply Co. 2016-02-12 (Unsplash).jpg",
+      "author": "Pineapple Supply Co. pineapple",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "page": "https://commons.wikimedia.org/wiki/File:Pineapple_Supply_Co._2016-02-12_(Unsplash).jpg"
     }
   },
   {
@@ -106,6 +118,18 @@
     "focus": {
       "x": 0.5,
       "y": 0.5
+    },
+    "source": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/25/BASF-magnetic-audio-tape-01.jpg",
+      "width": 4669,
+      "height": 3608
+    },
+    "credit": {
+      "title": "File:BASF-magnetic-audio-tape-01.jpg",
+      "author": "CEphoto, Uwe Aranas",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:BASF-magnetic-audio-tape-01.jpg"
     }
   },
   {
@@ -166,6 +190,18 @@
     "focus": {
       "x": 0.5,
       "y": 0.5
+    },
+    "source": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/2/2b/VW_Beetle_%2834529312865%29.jpg",
+      "width": 5184,
+      "height": 3888
+    },
+    "credit": {
+      "title": "File:VW Beetle (34529312865).jpg",
+      "author": "FotoSleuth",
+      "license": "CC BY 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:VW_Beetle_(34529312865).jpg"
     }
   },
   {
@@ -188,8 +224,8 @@
     "difficulty": "easy",
     "fact": "Their bright colours warn predators that they taste bad.",
     "focus": {
-      "x": 0.5,
-      "y": 0.5
+      "x": 0.57,
+      "y": 0.47
     },
     "source": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/2/28/2019-07-22_Coccinellidae_1.jpg",
@@ -292,6 +328,18 @@
     "focus": {
       "x": 0.5,
       "y": 0.5
+    },
+    "source": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/b/b6/Three_of_croissants_from_Yasamaki_Bakery.jpg",
+      "width": 5184,
+      "height": 3888
+    },
+    "credit": {
+      "title": "File:Three of croissants from Yasamaki Bakery.jpg",
+      "author": "Peachyeung316",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Three_of_croissants_from_Yasamaki_Bakery.jpg"
     }
   },
   {
@@ -380,8 +428,8 @@
     "difficulty": "easy",
     "fact": "Big Ben is technically the bell; the tower is called Elizabeth Tower.",
     "focus": {
-      "x": 0.5,
-      "y": 0.5
+      "x": 0.38,
+      "y": 0.35
     },
     "source": {
       "url": "https://upload.wikimedia.org/wikipedia/commons/0/0c/Big_Ben_at_sunrise%2C_2016.jpg",
@@ -648,16 +696,16 @@
       "y": 0.5
     },
     "source": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/6/62/Sydney_%28AU%29%2C_Opera_House_--_2019_--_2994.jpg",
-      "width": 6720,
-      "height": 4480
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/cd/Sydneyoperahouse_at_night.jpg",
+      "width": 5831,
+      "height": 3692
     },
     "credit": {
-      "title": "File:Sydney (AU), Opera House -- 2019 -- 2994.jpg",
-      "author": "Dietmar Rabich",
+      "title": "File:Sydneyoperahouse at night.jpg",
+      "author": "Thomas Adams",
       "license": "CC BY-SA 4.0",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-      "page": "https://commons.wikimedia.org/wiki/File:Sydney_(AU),_Opera_House_--_2019_--_2994.jpg"
+      "page": "https://commons.wikimedia.org/wiki/File:Sydneyoperahouse_at_night.jpg"
     }
   },
   {
@@ -683,16 +731,16 @@
       "y": 0.5
     },
     "source": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/a/aa/Polaroid-Camera.jpg",
-      "width": 6000,
-      "height": 4000
+      "url": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Polaroid_636_Close_Up_instant_camera.jpg",
+      "width": 5184,
+      "height": 3456
     },
     "credit": {
-      "title": "File:Polaroid-Camera.jpg",
-      "author": "WI-Photos",
-      "license": "CC0",
-      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-      "page": "https://commons.wikimedia.org/wiki/File:Polaroid-Camera.jpg"
+      "title": "File:Polaroid 636 Close Up instant camera.jpg",
+      "author": "Yuri Litvinenko / 30pin",
+      "license": "CC BY 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Polaroid_636_Close_Up_instant_camera.jpg"
     }
   },
   {
@@ -741,16 +789,16 @@
       "y": 0.5
     },
     "source": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/2/27/Carnegiea_gigantea_Saguaro_cactus_plant.jpg",
-      "width": 4256,
-      "height": 2832
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/46/Carnegiea_gigantea_kz02.jpg",
+      "width": 5474,
+      "height": 3910
     },
     "credit": {
-      "title": "File:Carnegiea gigantea Saguaro cactus plant.jpg",
-      "author": "Gentry George, U.S. Fish and Wildlife Service",
-      "license": "Public domain",
-      "licenseUrl": "",
-      "page": "https://commons.wikimedia.org/wiki/File:Carnegiea_gigantea_Saguaro_cactus_plant.jpg"
+      "title": "File:Carnegiea gigantea kz02.jpg",
+      "author": "Krzysztof Ziarnek, Kenraiz",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Carnegiea_gigantea_kz02.jpg"
     }
   },
   {
@@ -776,16 +824,16 @@
       "y": 0.5
     },
     "source": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/5/5c/Exterior_of_the_Leaning_Tower_%28Pisa%29_08.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/4/44/Cathedral_and_Leaning_Tower%2C_Pisa_04.jpg",
       "width": 4272,
       "height": 2848
     },
     "credit": {
-      "title": "File:Exterior of the Leaning Tower (Pisa) 08.jpg",
+      "title": "File:Cathedral and Leaning Tower, Pisa 04.jpg",
       "author": "John Samuel",
       "license": "CC BY-SA 4.0",
       "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-      "page": "https://commons.wikimedia.org/wiki/File:Exterior_of_the_Leaning_Tower_(Pisa)_08.jpg"
+      "page": "https://commons.wikimedia.org/wiki/File:Cathedral_and_Leaning_Tower,_Pisa_04.jpg"
     }
   },
   {
@@ -880,16 +928,16 @@
       "y": 0.5
     },
     "source": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c8/Rome_Colosseum_001.jpg",
-      "width": 7084,
-      "height": 5529
+      "url": "https://upload.wikimedia.org/wikipedia/commons/5/53/Colosseum_in_Rome%2C_Italy_-_April_2007.jpg",
+      "width": 4827,
+      "height": 2833
     },
     "credit": {
-      "title": "File:Rome Colosseum 001.jpg",
-      "author": "Wilfredor",
-      "license": "CC0",
-      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-      "page": "https://commons.wikimedia.org/wiki/File:Rome_Colosseum_001.jpg"
+      "title": "File:Colosseum in Rome, Italy - April 2007.jpg",
+      "author": "Diliff",
+      "license": "CC BY-SA 2.5",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/2.5",
+      "page": "https://commons.wikimedia.org/wiki/File:Colosseum_in_Rome,_Italy_-_April_2007.jpg"
     }
   },
   {
@@ -912,16 +960,16 @@
       "y": 0.5
     },
     "source": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/4/4c/Hot-air_balloon_in_Tambov_-_03.jpg",
-      "width": 4572,
-      "height": 3048
+      "url": "https://upload.wikimedia.org/wikipedia/commons/6/68/Hot_air_balloon_on_the_ground_in_Cappadocia.jpg",
+      "width": 5184,
+      "height": 3456
     },
     "credit": {
-      "title": "File:Hot-air balloon in Tambov - 03.jpg",
-      "author": "Alexander Novikov",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-      "page": "https://commons.wikimedia.org/wiki/File:Hot-air_balloon_in_Tambov_-_03.jpg"
+      "title": "File:Hot air balloon on the ground in Cappadocia.jpg",
+      "author": "Bernard Gagnon",
+      "license": "CC BY-SA 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Hot_air_balloon_on_the_ground_in_Cappadocia.jpg"
     }
   },
   {
