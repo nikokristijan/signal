@@ -248,7 +248,10 @@
       "Rubiks Cube",
       "Rubix Cube",
       "Rubik Cube",
-      "Magic Cube"
+      "Magic Cube",
+      "Speedcube",
+      "Speed Cube",
+      "Twisty Puzzle"
     ],
     "nudges": [
       "cube",
@@ -1009,9 +1012,7 @@
       "Balloon",
       "Air Balloon"
     ],
-    "nudges": [
-      "balloons"
-    ],
+    "nudges": [],
     "category": "Object",
     "difficulty": "easy",
     "fact": "The first crewed hot air balloon flight took place in Paris in 1783.",
@@ -1051,6 +1052,18 @@
     "focus": {
       "x": 0.5,
       "y": 0.5
+    },
+    "source": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f9/Margarita_Pizza_from_Pizza_Express.jpg",
+      "width": 5184,
+      "height": 3888
+    },
+    "credit": {
+      "title": "File:Margarita Pizza from Pizza Express.jpg",
+      "author": "Peachyeung316",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Margarita_Pizza_from_Pizza_Express.jpg"
     }
   },
   {
