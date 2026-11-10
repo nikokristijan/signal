@@ -1,55 +1,54 @@
 import type {
-  Attempt,
   AvatarSpec,
   FriendEntry,
-  GuessOutcome,
-  HistoryEntry,
+  GameResult,
+  Ghost,
   LeaderboardEntry,
   LeaderboardScope,
+  LogEntry,
   Profile,
-  PublicChallenge,
   Result,
-  Reveal,
 } from "../game/types";
 
+export interface DailyStatus {
+  date: string;
+  number: number;
+  state: "new" | "playing" | "finished";
+  result?: GameResult;
+  /** Kad je ranglirana partija počela (ms, serverski sat). */
+  startedAt?: number;
+}
+
 /**
- * Everything the UI needs from a backend. Two implementations exist:
- *  - LocalRepository    – browser storage + simulated community (demo / offline)
- *  - SupabaseRepository – Supabase Auth + Postgres (see supabase/migrations)
+ * Sve što sučelje traži od pozadine. Dvije implementacije:
+ *  - LocalRepository    – localStorage + simulirani prijatelji (demo bez Supabasea)
+ *  - SupabaseRepository – Supabase Auth + Postgres + API rute koje ponovno odigravaju partiju
  *
- * Guess checking lives behind this interface on purpose: with Supabase the answer
- * never leaves the database until the attempt is finished.
+ * Klijent NIKAD ne šalje bodove: samo zapis partije (`finishDaily`). Bodove računa „server".
  */
-export interface GameRepository {
+export interface BombRepository {
   readonly mode: "local" | "supabase";
-  /** Present only when the backend needs real sign-in (Supabase). */
   readonly auth?: {
-    signInWithEmail(email: string, username: string): Promise<Result<true>>;
+    /** Anonimni račun povezuje s e-mailom da se ne izgubi. */
+    linkEmail(email: string): Promise<Result<true>>;
+    /** Prijava postojećeg (povezanog) računa na novom uređaju. */
+    signInWithEmail(email: string): Promise<Result<true>>;
     signOut(): Promise<void>;
   };
 
-  /** Current profile, or null when nobody is signed in. */
-  getProfile(): Promise<Profile | null>;
-  /** Local mode creates a guest profile on first use. Supabase mode requires sign-in. */
   ensureProfile(): Promise<Profile | null>;
   updateProfile(patch: { username?: string; avatar?: AvatarSpec }): Promise<Result<Profile>>;
 
-  getChallenge(dateKey: string): Promise<PublicChallenge>;
-  getAttempt(challengeId: string): Promise<Attempt | null>;
-  startAttempt(challenge: PublicChallenge): Promise<Attempt>;
-  submitGuess(challengeId: string, guess: string): Promise<GuessOutcome>;
-  revealNextStage(challengeId: string): Promise<Attempt>;
-  giveUp(challengeId: string): Promise<Attempt>;
-  /** Answer, category, facts and photo credit — only once the attempt is finished. */
-  getReveal(challengeId: string): Promise<Reveal | null>;
+  getDaily(date: string): Promise<DailyStatus>;
+  startDaily(date: string): Promise<Result<{ startedAt: number; state: DailyStatus["state"]; result?: GameResult }>>;
+  finishDaily(date: string, log: LogEntry[]): Promise<Result<GameResult>>;
+  listResults(): Promise<GameResult[]>;
 
-  listAttempts(): Promise<Attempt[]>;
-  listHistory(): Promise<HistoryEntry[]>;
-  getStreak(dateKey: string): Promise<{ current: number; longest: number }>;
-
-  listFriends(dateKey: string): Promise<FriendEntry[]>;
-  addFriend(username: string, dateKey: string): Promise<Result<FriendEntry>>;
+  listFriends(date: string): Promise<FriendEntry[]>;
+  addFriend(username: string, date: string): Promise<Result<FriendEntry>>;
   removeFriend(userId: string): Promise<void>;
+  /** Prijatelji koji su danas već odigrali: „duhovi" na traci napretka. */
+  getGhosts(date: string): Promise<Ghost[]>;
 
-  getLeaderboard(scope: LeaderboardScope, dateKey: string): Promise<LeaderboardEntry[]>;
+  getLeaderboard(scope: LeaderboardScope, date: string): Promise<LeaderboardEntry[]>;
 }

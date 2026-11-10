@@ -1,20 +1,20 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { GameProvider } from "@/components/GameProvider";
+import { BombProvider } from "@/components/BombProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SIGNAL — Daily Zoom Challenge",
-  description: "Can you recognize what you're looking at? One photograph, five zoom levels, a new puzzle every day.",
+  title: "Bomba — dnevna igra riječi",
+  description: "Upiši riječ sa slogom prije nego bomba eksplodira. Svaki dan isti slogovi za sve, usporedi se s prijateljima.",
 };
 
-export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#faf8f4" };
+export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#15131a", viewportFit: "cover" };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="hr">
       <body>
-        <GameProvider>{children}</GameProvider>
+        <BombProvider>{children}</BombProvider>
       </body>
     </html>
   );

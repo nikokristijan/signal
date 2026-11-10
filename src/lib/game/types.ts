@@ -1,154 +1,105 @@
-export type Difficulty = "easy" | "medium" | "hard";
+import type { Mode } from "./constants";
 
-export type Category =
-  | "Landmark"
-  | "Famous building"
-  | "Animal"
-  | "Food"
-  | "Car"
-  | "Everyday item"
-  | "Technology"
-  | "Historical object"
-  | "Nature"
-  | "Object";
-
-export interface PhotoCredit {
-  /** Commons file title, e.g. "File:Eiffel Tower.jpg" */
-  title: string;
-  author: string;
-  license: string;
-  licenseUrl: string;
-  /** Page the photo came from. */
-  page: string;
+/** Jedan korak zapisa partije. w = upisana riječ (kako je igrač upisao), null = bomba je eksplodirala. t = ms. */
+export interface LogEntry {
+  w: string | null;
+  t: number;
 }
 
-/** Shape of one entry in src/lib/data/challenges.json */
-export interface ChallengeDef {
-  slug: string;
-  subject: string;
-  answer: string;
-  alternatives: string[];
-  /** Guesses that are on the right track but too generic: no penalty, just a nudge. */
-  nudges: string[];
-  category: Category;
-  difficulty: Difficulty;
-  fact: string;
-  /** Focal point (0..1) every zoom stage is centred on. */
-  focus: { x: number; y: number };
-  /** Optional per-challenge zoom factors for stages 1..5 (stage 5 is always 1). */
-  zooms?: number[];
-  /** Original file on Commons, used only by the art build script. */
-  source: { url: string; width: number; height: number };
-  credit: PhotoCredit;
+export interface WordEntry {
+  /** Slog koji je bio na bombi. */
+  syllable: string;
+  /** Kanonski oblik riječi iz rječnika. */
+  word: string;
+  ms: number;
+  points: number;
+  combo: number;
 }
 
-/** Full challenge, including the answer. Server-side (or local adapter) only. */
-export interface Challenge {
-  id: string;
-  number: number;
-  date: string; // YYYY-MM-DD
-  slug: string;
-  subject: string;
-  answer: string;
-  alternatives: string[];
-  nudges: string[];
-  category: Category;
-  difficulty: Difficulty;
-  fact: string;
-  /** Five image URLs: crops of the SAME photograph, from extreme close-up to full frame. */
-  stages: string[];
-  credit: PhotoCredit;
-}
-
-/** What the player may see before finishing: no answer. */
-export interface PublicChallenge {
-  id: string;
-  number: number;
-  date: string;
-  stages: string[];
-}
-
-/** What is revealed once the attempt is finished. */
-export interface Reveal {
-  subject: string;
-  answer: string;
-  category: Category;
-  difficulty: Difficulty;
-  fact: string;
-  credit: PhotoCredit;
-}
-
-export type AttemptStatus = "playing" | "solved" | "gave_up";
-
-export interface Guess {
-  text: string;
-  stage: number;
-  correct: boolean;
-}
-
-export interface Attempt {
-  challengeId: string;
-  date: string;
-  number: number;
-  /** Highest stage revealed so far, 1..5 */
-  stage: number;
-  guesses: Guess[];
-  wrongCount: number;
-  status: AttemptStatus;
-  /** Final score once finished; live score while playing. */
+export interface GameState {
+  /** Indeks sljedećeg sloga u nizu (= broj dosad potrošenih slogova). */
+  step: number;
+  lives: number;
   score: number;
-  /** Stage on which the answer was found, null if not solved. */
-  solvedStage: number | null;
-  startedAt: string;
-  finishedAt: string | null;
+  /** Broj točnih riječi. */
+  successes: number;
+  booms: number;
+  combo: number;
+  maxCombo: number;
+  /** Je li prethodni odgovor bio brz (daje +1 s sljedećem tajmeru). */
+  lastFast: boolean;
+  /** Kanonske riječi iskorištene u ovoj partiji. */
+  used: string[];
+  words: WordEntry[];
+  longest: string;
+  over: boolean;
 }
 
-export type Verdict = "correct" | "close" | "wrong" | "duplicate" | "empty";
-
-export interface GuessOutcome {
-  verdict: Verdict;
-  attempt: Attempt;
-  /** Points lost on this guess (0 or 50) */
-  penalty: number;
+export interface GameSummary {
+  score: number;
+  words: number;
+  maxCombo: number;
+  longest: string;
+  wordList: string[];
+  booms: number;
+  /** Zbroj svih t u zapisu. */
+  durationMs: number;
 }
+
+/** Spremljeni rezultat jedne dnevne partije. */
+export interface GameResult extends GameSummary {
+  mode: Mode;
+  date: string; // YYYY-MM-DD (Europe/Zagreb)
+  number: number;
+  finishedAt: string;
+}
+
+export type WordRejection = "empty" | "no-syllable" | "not-in-dictionary" | "used" | "invalid";
+
+export type Result<T> = { ok: true; value: T } | { ok: false; error: string };
 
 export interface AvatarSpec {
-  color: string; // key of AVATAR_COLORS
+  color: string;
 }
 
 export interface Profile {
   id: string;
   username: string;
   avatar: AvatarSpec;
+  /** Supabase: anonimni račun koji još nije povezan s e-mailom. */
+  anonymous?: boolean;
+  email?: string | null;
 }
 
-export type LeaderboardScope = "friends" | "daily" | "weekly" | "monthly" | "all";
+export type LeaderboardScope = "friends" | "daily" | "weekly" | "all";
 
 export interface LeaderboardEntry {
   rank: number;
   userId: string;
   username: string;
   avatar: AvatarSpec;
-  /** Points for the selected scope. */
   points: number;
+  words: number;
   isMe: boolean;
-  /** Friends scope only: today's points and all-time total. */
-  today?: number | null;
-  total?: number;
+  simulated?: boolean;
+}
+
+/** Prijatelj koji je danas već odigrao: „duh" na traci napretka. */
+export interface Ghost {
+  userId: string;
+  username: string;
+  avatar: AvatarSpec;
+  words: number;
+  score: number;
+  simulated?: boolean;
 }
 
 export interface FriendEntry {
   userId: string;
   username: string;
   avatar: AvatarSpec;
-  todayPoints: number | null;
-  totalPoints: number;
+  todayWords: number | null;
+  todayScore: number | null;
+  totalScore: number;
+  simulated?: boolean;
 }
-
-export interface HistoryEntry extends Attempt {
-  subject: string;
-  category: Category;
-  image: string;
-}
-
-export type Result<T> = { ok: true; value: T } | { ok: false; error: string };

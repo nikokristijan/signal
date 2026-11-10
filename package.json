@@ -1,20 +1,20 @@
 {
-  "name": "signal",
+  "name": "bomba",
   "version": "0.1.0",
   "private": true,
-  "description": "SIGNAL — a daily zoom puzzle. Can you recognize what you're looking at?",
+  "description": "Bomba — dnevna hrvatska igra riječi pod pritiskom vremena",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "tsc --noEmit",
     "test": "vitest run",
-    "photos": "node scripts/build-photos.mjs",
-    "photos:sheet": "node scripts/contact-sheet.mjs"
+    "rjecnik": "node scripts/build-dictionary.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.57.0",
+    "fflate": "^0.8.2",
     "lucide-react": "^0.540.0",
     "next": "^15.5.0",
     "react": "^19.1.0",
@@ -22,12 +22,14 @@
     "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.16",
     "@types/node": "^22.10.0",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
     "autoprefixer": "^10.4.20",
+    "dictionary-hr": "^2.0.0",
+    "hunspell-reader": "^10.4.1",
     "postcss": "^8.4.49",
-    "sharp": "^0.34.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.0",
     "vitest": "^3.2.0"

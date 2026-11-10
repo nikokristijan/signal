@@ -1,130 +1,134 @@
-# SIGNAL — Daily Zoom Challenge
+# BOMBA — dnevna hrvatska igra riječi
 
-> Can you recognize what you're looking at?
+> **Napomena o povijesti repozitorija:** repozitorij se još zove `signal` jer je na njega povezan Vercel. Do commita „Bomba" ovdje je bila igra SIGNAL (dnevna igra s uvećanim fotografijama). Njezin zadnji commit je `fbc4da5`; vrati je s `git checkout fbc4da5` (ili `git revert` ovog commita).
 
-SIGNAL is a daily visual guessing game. Everyone gets the **same photograph** each day, zoomed in
-so far that it's nearly unreadable. Guess what it is — or reveal another zoom level and risk
-earning fewer points. One puzzle a day, a streak to protect, and friends to beat.
 
-Built with **Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS · Supabase · Lucide**.
+Na bombi je **slog** od 2–3 slova (npr. `KRA`). Upiši riječ koja ga sadrži (*kravata*, *ukrasti*, *ukrao*…) prije nego bomba eksplodira.
+Svatko igra sam, svaki dan svi dobiju **isti niz slogova**, a rezultati se uspoređuju s prijateljima kao u Wordleu. Bez lobbyja, bez igre uživo.
 
-## How it plays
+Next.js 15 (App Router) · React 19 · TypeScript · Tailwind CSS · Supabase · Vercel. Cijelo sučelje je na hrvatskom, mobile-first.
 
-| Stage | Zoom | Points if correct |
-| ----- | ---- | ----------------- |
-| 1/5 | extreme close-up | 500 |
-| 2/5 | a bit more | 400 |
-| 3/5 | more context | 300 |
-| 4/5 | recognizable | 200 |
-| 5/5 | the whole subject | 100 |
+## Kako se igra
 
-* Every wrong answer costs **50 points** (never below zero) and you keep playing.
-* Repeating a guess, or a too-generic one ("camera", "bus"), costs nothing.
-* **Reveal next zoom** shows the next stage; **Give up** reveals the answer for 0 points.
-* One attempt per calendar day. Challenges roll over at **local midnight**, with a countdown.
-* Progress is saved on every action, so a refresh never loses anything.
+* Točna riječ = novi slog i tajmer se vraća. Kriva riječ ne radi ništa (crveni shake + razlog: *Nema sloga*, *Nema u rječniku*, *Već iskorišteno*).
+* **Tajmer** kreće od 10 s i sa svakom točnom riječi se skraćuje za 0,25 s, do najmanje 3 s.
+* Kad tajmer istekne, bomba eksplodira: gubiš život i dobivaš novi slog. Kreneš s **2 života**, partija završava na 0.
+* **Combo:** odgovor brži od 2 s povećava combo i daje +1 s sljedećem tajmeru; spor odgovor ga resetira.
+* **Bodovi:** što je riječ duža, to više vrijedi: **broj slova na kvadrat** (kravata = 49, ukrasti = 64, neprobojnost = 144) + bonus za combo (2 × combo, najviše 30). Duga riječ uvijek vrijedi više od kraće.
+* Životi se ne mogu dobiti natrag: kreneš s 2, a partija završava na 0.
+* Dijakritici nisu obavezni: `kisobran` vrijedi ako postoji `kišobran`. Slog s dijakritikom (npr. `ŠA`) traži riječ koja ga stvarno sadrži, pa `sat` ne vrijedi.
+* **Duhovi prijatelja:** tanka traka napretka s točkom za svakog prijatelja koji je danas igrao (gdje je pao), a tekst iznad nje kaže tko je sljedeći koga možeš prestići (`Sljedeći: Ivan · 23 — još 5`). Kad ga prestigneš, pojavi se *Prestigao si Ivana!*
 
-All five stages are crops of **one** original photograph (nested, so each stage fully contains
-the previous one) — see [Photos](#photos).
+**Dnevni izazov:** niz slogova generira deterministički PRNG iz datuma (`bomba:YYYY-MM-DD`, vrijeme **Europe/Zagreb**, ponoć je granica za sve). Broj izazova = dani od lansiranja (30. 10. 2026. je #1). Jedan rangirani pokušaj dnevno. **Refresh je nastavak, ne nova partija:** napredak se sprema nakon svakog koraka, a sat ne staje (ako tajmer istekne dok te nema, bomba je eksplodirala).
+**Trening** (`/trening`) je neograničen, ne ide na ljestvicu; `/trening?seed=nesto` daje isti niz slogova svima koji otvore taj link.
 
-## Run it
+## Pokretanje
 
 ```bash
 npm install
-npm run dev          # http://localhost:3000
-npm test             # unit tests (scoring, matching, streaks, dataset integrity, repo flow)
-npm run lint         # type-check
+npm run dev        # http://localhost:3000
+npm test           # vitest (89 testova)
+npm run lint       # provjera tipova
+npm run build
 ```
 
-With no environment variables the app runs in **local demo mode**: your profile, attempts, friends
-and scores live in the browser (`localStorage`), and the rest of the community is **simulated**
-(`src/lib/repo/mock-community.ts`, deterministic, clearly labelled in the UI).
+Bez varijabli okoline radi **lokalni demo**: profil, partije i prijatelji su u `localStorage`, a ostali igrači su **simulirani** (jasno označeno u sučelju; `src/lib/repo/mock-community.ts`).
+U razvoju možeš simulirati drugi dan s `?datum=2026-11-11` (u produkciji je isključeno).
 
-In development you can simulate another day with `?date=YYYY-MM-DD` (e.g. `/?date=2026-11-11`).
-The override is disabled in production builds.
+## Rječnik (svi oblici riječi)
 
-## Switching to Supabase
+Izvor je hunspell rječnik `hr_HR` (npm `dictionary-hr`, autor Denis Lacković, licenca **LGPL-2.1 ili SISSL**; vidi `NOTICE-rjecnik.txt`).
+`npm run rjecnik` (`scripts/build-dictionary.mjs`) pomoću `hunspell-reader` proširuje afikse (padeže, glagolske oblike…): **53.711 osnova → 1.048.868 oblika → 1.014.136 nakon filtra** (samo obične riječi: mala slova, 3–24 slova, sa samoglasnikom ili slogotvornim „r"; bez vlastitih imena i kratica).
 
-1. Create a Supabase project and run `supabase/migrations/0001_init.sql` and
-   `supabase/migrations/0002_storage.sql` in the SQL editor.
-2. Generate and run the challenge seed: `node scripts/generate-seed.mjs > supabase/seed.sql`.
-3. Upload the stage images to the private bucket:
-   `SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/upload-stages.mjs`.
-4. Copy `.env.example` → `.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL`,
-   `NEXT_PUBLIC_SUPABASE_ANON_KEY` and the server-only `SUPABASE_SERVICE_ROLE_KEY`.
-   In Auth settings enable email sign-in and add your site URL.
+| | |
+|---|---|
+| Format | front-coded popis sortiran po „složenom" ključu (č,ć→c, š→s, ž→z, đ→d), 1 bajt po slovu, blokovi od 128 zapisa |
+| Veličina | 3,5 MB sirovo, **482 KB gzipano** (cilj je bio < 3 MB) |
+| Provjera | binarno po blokovima + dekodiranje jednog bloka; **trenutna**, bez mreže, u **web workeru** |
+| Memorija | ≈ 3,5 MB (ne milijun JS stringova) |
 
-The UI never talks to Supabase directly. It uses the `GameRepository` interface
-(`src/lib/repo/types.ts`) which has two implementations: `LocalRepository` and `SupabaseRepository`.
-`getRepository()` picks one based on the env vars.
+Zato nije trebalo filtrirati po frekvenciji: puni rječnik stane u 482 KB. Kompromis je kvaliteta, a ne veličina: hunspell proširenje sadrži i rijetke/arhaične oblike pa neke čudne riječi prolaze. Slogovi se zato biraju po broju različitih **korijena**, ne oblika (slog `jgr` ima 266 oblika, ali jedan korijen, pa nije pošten).
 
-**Database** (`supabase/migrations/0001_init.sql`)
+**Slogovi** (`src/lib/data/slogovi.json`, generirano): 2568 slogova u 3 težine (645 lakih, 785 srednjih, 1138 teških). Težina raste kroz partiju (prvih 5 su laki). Svaki ima ≥ 40 korijena riječi. Isti slog se ne ponavlja unutar 12 koraka.
+> ⚠️ Nakon lansiranja **ne pokreći** `npm run rjecnik` bez razmišljanja: promjena skupa slogova mijenja nizove svim danima (test `syllables.test.ts` ima snapshot upravo zato).
 
-| Table | Purpose |
-| ----- | ------- |
-| `profiles` | users (id = `auth.users.id`), unique username, avatar colour |
-| `challenges` | one row per day: answer, alternatives, nudges, category, difficulty, five stage image URLs, photo credit |
-| `daily_attempts` | one row per player per challenge (`unique(user_id, challenge_id)`): stage, guesses, wrong count, status, score |
-| `scores` | immutable result per finished challenge; leaderboards aggregate this |
-| `friendships` | mutual friend relationships (both directions inserted by `add_friend`) |
-| `streaks` | current/longest streak, maintained when a challenge is solved |
+## Anti-cheat
 
-**Cheat resistance.** `challenges` has RLS enabled with *no* policies, and there are no insert/update
-policies on attempts, scores, streaks or friendships. All gameplay goes through `SECURITY DEFINER`
-functions (`start_attempt`, `submit_guess`, `reveal_stage`, `give_up`, `get_reveal`,
-`leaderboard`, …). The answer is checked in Postgres and only returned by `get_reveal` after the
-attempt is finished; clients can't post their own score.
+Klijent **nikad ne šalje bodove**, nego samo zapis partije `[{w: "riječ" | null, t: ms}, …]` (`null` = eksplozija).
+`replayLog()` (`src/lib/game/replay.ts`) ponovno odigra partiju i provjeri:
 
-> ⚠️ The Supabase adapter and SQL were written against the Supabase docs but **have not been run
-> against a live project** in this repo's development environment (no Supabase instance was
-> available). The local adapter and all game rules are covered by tests; run through the flow once
-> on a fresh Supabase project before relying on it.
+* seed i slogove (generiraju se iz datuma, ne iz zapisa),
+* da je riječ u rječniku, sadrži slog i nije ponovljena,
+* da je svako vrijeme unutar dopuštenog tajmera (`t < limit`), a eksplozija točno na limitu,
+* da je unos ljudski moguć (≥ 40 ms po slovu),
+* da zapis ne nastavlja nakon kraja i da je partija završena,
 
-## Photos
+pa **sam izračuna bodove**. Dodatno API ruta provjerava da zapis **ne traje dulje nego što je partija stvarno trajala** (vrijeme starta bilježi server), da datum određuje server (Europe/Zagreb), najviše 5 neuspjelih slanja i da je slanje idempotentno.
+**RLS** je uključen na svim tablicama; nema insert/update politika na `games`, `scores`, `streaks`, `friendships`. Rezultat upisuje samo `bomba_record_result()` koju smije pozvati samo `service_role`. Service-role ključ je samo na serveru.
 
-Real photographs from **Wikimedia Commons**, each credited (author, licence, source page) in
-`src/lib/data/challenges.json` and shown on the result screen.
+> Ograničenje: ovo je provjera pravila i vjerodostojnosti, **ne** zaštita od bota koji stvarno igra u stvarnom vremenu s rječnikom. Za takvo što treba dodatni sloj (npr. CAPTCHA, ograničenja brzine, detekcija obrazaca).
 
-`npm run photos` (`scripts/build-photos.mjs`) downloads the original, cuts the largest 4:3 frame,
-and renders five WebP crops into `public/challenges/<slug>/stage-1..5.webp` using the focal point
-and zoom factors from `challenges.json`. Only the small crops are committed.
-Stage 1 is capped so the crop is never tighter than ~520 source pixels, and
-`tests/dataset.test.ts` asserts every stage contains the previous one.
+## Supabase
 
-To add a challenge: append to `challenges.json` (answer, alternatives, nudges, `focus`, source +
-credit), run `npm run photos`, then `npm run photos:sheet` and *look at the five stages*:
-stage 1 should be hard but fair, stage 4 recognizable. `npm test` also checks that no answer (even
-with typo tolerance) matches a different challenge.
+1. Napravi projekt na [supabase.com](https://supabase.com).
+2. U **SQL editoru** pokreni `supabase/migrations/0001_init.sql` (tablice `profiles`, `games`, `scores`, `friendships`, `streaks`, RLS, funkcije).
+3. **Authentication → Sign In / Providers:** uključi **Allow anonymous sign-ins** (račun bez trenja) i **Email** (za povezivanje e-maila). Preporuka: uključi CAPTCHA za anonimne prijave da se ne mogu masovno otvarati računi.
+4. **Authentication → URL Configuration:** *Site URL* = adresa aplikacije (npr. `https://bomba.vercel.app`), dodaj je i u *Redirect URLs*.
+5. **Project Settings → API:** kopiraj *Project URL*, *anon key* i *service_role key*.
+6. Kopiraj `.env.example` u `.env.local` i ispuni:
+   ```
+   NEXT_PUBLIC_SUPABASE_URL=…
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=…
+   SUPABASE_SERVICE_ROLE_KEY=…     # samo server, nikad NEXT_PUBLIC_
+   ```
 
-**Images in Supabase mode are private.** The stage files live in a private bucket under opaque
-paths (`sig-020/stage-3.webp`, never the subject name). The browser requests
-`/api/stage?challenge=sig-020&stage=3`; that route checks the signed-in player's attempt and only
-redirects to a 60-second signed URL for stages already revealed (or any stage once finished), so
-the full photo can't be fetched early. In local demo mode the same images are plain static files in
-`public/challenges/` — fine for a demo, but not spoiler-proof.
+Prvi ulazak: anonimna prijava + nasumično ime `igrac1234` koje igrač promijeni na stranici *Prijatelji*. Na istoj stranici može **povezati e-mail** (anonimni račun se pretvara u stalni) ili se na novom uređaju prijaviti poveznicom.
 
-## What has been verified
+## Vercel
 
-* `npm test` — 29 unit tests: scoring, answer matching, attempt engine, streaks and dates, the
-  dataset (32 challenges, unique ids/dates, five nested stages with files on disk, no answer
-  matching a different challenge) and the full local-repository flow.
-* End-to-end in a real browser (Playwright, mobile 390×844 and desktop 1280×800, against both
-  `next dev` and `next start`): open today's challenge → view stage 1 → wrong answer (−50, image and
-  input unchanged) → reveal stage 2 → correct answer (score 350) → leaderboard (all five tabs, current
-  user highlighted) → refresh (progress and result persist, including mid-game) → stats, history,
-  friends and invite link.
-* **Not verified:** the Supabase adapter, SQL migrations and `/api/stage` (no Supabase project was
-  available). Run them against a fresh project before relying on them.
+1. Postavi repozitorij na GitHub i na [vercel.com](https://vercel.com) odaberi **Add New → Project** i taj repozitorij (Next.js se prepoznaje sam).
+2. U **Environment Variables** dodaj sve tri varijable gore (za *Production* i *Preview*). `SUPABASE_SERVICE_ROLE_KEY` ne označavaj kao javnu.
+3. **Deploy.** Rječnik (`public/dict/hr.bin.gz`) server čita s diska; `next.config.mjs` ga uključuje u funkcije (`outputFileTracingIncludes`).
+4. Preporuka: odaberi Vercel *region* blizu Supabase regije (manja latencija API ruta).
+5. Nakon prvog deploya provjeri **Site URL** u Supabaseu (točka 4 gore).
 
-## Project layout
+## Struktura
 
 ```
-src/app/                 pages: / · /play · /leaderboard · /stats · /friends · /invite/[username]
-src/components/          Header, ZoomImage, GuessForm, ResultCard, LeaderboardTable, …
-src/lib/game/            pure rules: scoring, answer matching, attempt engine, stats, dates, share text
-src/lib/data/            curated challenge dataset (+ typed accessors)
-src/lib/repo/            GameRepository interface · local adapter · Supabase adapter · simulated community
-supabase/migrations/     schema, RLS, game functions
-scripts/                 photo pipeline, contact sheets, seed generator
-tests/                   vitest suites
+src/app/                  stranice: / · /igra · /trening · /ljestvica · /statistika · /prijatelji · /pozivnica/[username] · /api/igra/*
+src/components/           BombView (fitilj, iskra), GameScreen, GhostBar, LettersTracker, ResultPanel, LeaderboardTable…
+src/hooks/useBombGame.ts  petlja igre: tajmer (rAF), unos, eksplozija, nastavak nakon refresha, predaja zapisa
+src/workers/              web worker za rječnik
+src/lib/game/             čista pravila: konstante, PRNG, slogovi, bodovanje, replay, datumi, statistika, dijeljenje
+src/lib/dict/             rječnik, normalizacija dijakritika, provjera riječi, klijent za worker, učitavač za server
+src/lib/repo/             sučelje · lokalni adapter + simulirana zajednica · Supabase adapter
+src/lib/audio.ts          zvukovi (Web Audio API, bez datoteka) i vibracija
+supabase/migrations/      shema, RLS, funkcije
+scripts/build-dictionary.mjs   gradnja rječnika i slogova
+tests/                    vitest
 ```
+
+## Testovi
+
+`npm test` (89 testova):
+
+* **generator slogova:** determinizam, prefiksna stabilnost, rast težine, snapshot za 10. 11. 2026., rješivost svakog sloga,
+* **pravila:** tajmer, combo, bodovanje po duljini riječi (dulja riječ uvijek vrijedi više), životi,
+* **normalizacija dijakritika** i rječnik (*ukrao, kravatom, kišobran, kisobran → kišobran*, `sat` ≠ `ŠA`),
+* **server replay:** valjana partija, lažni bodovi se ignoriraju, odbijanje (riječ izvan rječnika, bez sloga, ponovljena, istek tajmera, prebrz unos, krivi seed, partija nastavljena nakon kraja, nezavršena…),
+* **datumi:** granica zagrebačke ponoći ljeti i zimi, odbrojavanje na dane promjene sata (23 h / 25 h),
+* **SQL na pravom Postgresu (PGlite):** migracija, okidač za profil, **RLS** (igrač ne može upisati ni promijeniti rezultat), `bomba_record_result` samo za `service_role`, nizovi, ljestvice, prijatelji,
+* **API rute `/api/igra/*`** s pravom bazom: idempotentnost, odbijanje, brojač pokušaja, provjera proteklog vremena, razdvojenost igrača.
+
+Uz to je cijeli tok prošao u pravom pregledniku (Playwright, mobilna i desktop veličina): stvarna partija s eksplozijama, krivi unosi, combo, duhovi i „Prestigao si…", refresh usred partije, eksplozija dok te nema, ljestvice, statistika, prijatelji, pozivnica, trening.
+
+## Što je gotovo, a što nije
+
+**Provjereno:** sva pravila igre, rječnik, generator slogova, server replay, SQL shema i RLS (PGlite), API rute (PGlite + zamijenjen Supabase klijent), cijeli tok u pregledniku (lokalni demo), produkcijski build.
+
+**Nije provjereno** (u razvojnom okruženju nije bilo Supabase projekta, Vercela ni uređaja):
+* `SupabaseRepository`, stvarna **anonimna prijava**, čitanje sesije iz cookieja u API rutama (`@supabase/ssr`) i povezivanje e-maila: napisano prema dokumentaciji, ali **nikad pokrenuto protiv pravog Supabasea**. Isprobaj cijeli tok na praznom projektu prije lansiranja.
+* **Deploy na Vercel** nije napravljen.
+* **Zvuk** (Web Audio) i **vibracija**: kod radi bez grešaka u pregledniku, ali zvuk nisam mogao čuti, a vibracija ne postoji u emulaciji.
+* **Pravi mobiteli** (iOS Safari/Android Chrome): ponašanje tipkovnice i fokusa provjereno samo u emuliranom Chromiumu. Input se nikad ne uklanja iz DOM-a niti onemogućuje, da tipkovnica ostane otvorena, ali to treba vidjeti na uređaju.
+* Ako se partija započne na jednom uređaju i napredak se izgubi (npr. brisanje podataka preglednika), pokušaj za taj dan je zaključan (prikazuje se poruka). Nema serverskog checkpointa partije.

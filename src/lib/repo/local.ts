@@ -1,37 +1,23 @@
-import { getChallengeById, getChallengeForDate, toPublic, toReveal } from "../data/challenges";
-import { applyGiveUp, applyGuess, applyReveal } from "../game/engine";
-import { newAttempt } from "../game/scoring";
-import { computeStreaks } from "../game/stats";
-import type {
-  Attempt,
-  AvatarSpec,
-  FriendEntry,
-  GuessOutcome,
-  HistoryEntry,
-  LeaderboardEntry,
-  LeaderboardScope,
-  Profile,
-  PublicChallenge,
-  Result,
-  Reveal,
-} from "../game/types";
 import { AVATAR_KEYS } from "../avatars";
-import { DEFAULT_FRIENDS, MOCK_USERS, mockPoints, mockTotal, rangeFor } from "./mock-community";
-import { LAUNCH_DATE } from "../data/challenges";
-import type { GameRepository } from "./types";
+import { loadDictionary } from "../dict/loader";
+import { challengeNumber, dailySeed, LAUNCH_DATE } from "../game/dates";
+import { checkElapsed, replayLog } from "../game/replay";
+import type { AvatarSpec, FriendEntry, GameResult, Ghost, LeaderboardEntry, LeaderboardScope, LogEntry, Profile, Result } from "../game/types";
+import { DEFAULT_FRIENDS, MOCK_USERS, mockDay, mockRange, rangeFor } from "./mock-community";
+import type { BombRepository, DailyStatus } from "./types";
 
-const STORAGE_KEY = "signal:v1";
+const STORAGE_KEY = "bomba:v1";
+export const USERNAME_RE = /^[a-z0-9_]{3,16}$/;
 
-interface StoredState {
+interface Stored {
   profile: Profile | null;
-  attempts: Record<string, Attempt>;
-  /** usernames of simulated friends */
+  results: Record<string, GameResult>;
+  /** Kad je počela ranglirana partija za dan (ms). Samo jedan pokušaj dnevno. */
+  started: Record<string, number>;
   friends: string[];
 }
 
-export const USERNAME_RE = /^[a-z0-9_]{3,16}$/;
-
-/** localStorage can throw (private mode, blocked storage): fall back to memory. */
+/** localStorage može baciti iznimku (privatni način): tada se podaci drže samo u memoriji. */
 function createStorage() {
   let memory: string | null = null;
   return {
@@ -42,233 +28,192 @@ function createStorage() {
         return memory;
       }
     },
-    write(value: string) {
-      memory = value;
+    write(v: string) {
+      memory = v;
       try {
-        window.localStorage.setItem(STORAGE_KEY, value);
+        window.localStorage.setItem(STORAGE_KEY, v);
       } catch {
-        /* keep in memory only */
+        /* samo memorija */
       }
     },
   };
 }
 
-function guestName(): string {
-  return `player${Math.floor(1000 + Math.random() * 9000)}`;
-}
+const uuid = () =>
+  typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
 
-function uuid(): string {
-  return typeof crypto !== "undefined" && "randomUUID" in crypto
-    ? crypto.randomUUID()
-    : `local-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-export class LocalRepository implements GameRepository {
+export class LocalRepository implements BombRepository {
   readonly mode = "local" as const;
   private storage = createStorage();
 
-  private load(): StoredState {
+  private load(): Stored {
     const raw = this.storage.read();
     if (raw) {
       try {
-        const parsed = JSON.parse(raw) as StoredState;
-        return { profile: parsed.profile ?? null, attempts: parsed.attempts ?? {}, friends: parsed.friends ?? DEFAULT_FRIENDS };
+        const p = JSON.parse(raw) as Stored;
+        return { profile: p.profile ?? null, results: p.results ?? {}, started: p.started ?? {}, friends: p.friends ?? [...DEFAULT_FRIENDS] };
       } catch {
-        /* corrupted: start over */
+        /* oštećeno: kreni ispočetka */
       }
     }
-    return { profile: null, attempts: {}, friends: [...DEFAULT_FRIENDS] };
+    return { profile: null, results: {}, started: {}, friends: [...DEFAULT_FRIENDS] };
   }
 
-  private save(state: StoredState) {
-    this.storage.write(JSON.stringify(state));
-  }
-
-  async getProfile() {
-    return this.load().profile;
+  private save(s: Stored) {
+    this.storage.write(JSON.stringify(s));
   }
 
   async ensureProfile(): Promise<Profile> {
-    const state = this.load();
-    if (state.profile) return state.profile;
+    const s = this.load();
+    if (s.profile) return s.profile;
     const taken = new Set(MOCK_USERS.map((u) => u.username));
-    let username = guestName();
-    while (taken.has(username)) username = guestName();
-    const profile: Profile = { id: uuid(), username, avatar: { color: AVATAR_KEYS[Math.floor(Math.random() * AVATAR_KEYS.length)] } };
-    this.save({ ...state, profile });
+    let username = "";
+    do username = `igrac${Math.floor(1000 + Math.random() * 9000)}`;
+    while (taken.has(username));
+    const profile: Profile = { id: uuid(), username, avatar: { color: AVATAR_KEYS[Math.floor(Math.random() * AVATAR_KEYS.length)] }, anonymous: true };
+    this.save({ ...s, profile });
     return profile;
   }
 
   async updateProfile(patch: { username?: string; avatar?: AvatarSpec }): Promise<Result<Profile>> {
-    const state = this.load();
-    if (!state.profile) return { ok: false, error: "No profile yet." };
-    let username = state.profile.username;
+    const s = this.load();
+    if (!s.profile) return { ok: false, error: "Profil još ne postoji." };
+    let username = s.profile.username;
     if (patch.username !== undefined) {
       username = patch.username.trim().toLowerCase();
-      if (!USERNAME_RE.test(username)) return { ok: false, error: "Use 3–16 letters, numbers or underscores." };
-      if (MOCK_USERS.some((u) => u.username === username)) return { ok: false, error: "That username is taken." };
+      if (!USERNAME_RE.test(username)) return { ok: false, error: "3–16 znakova: mala slova, brojevi ili _." };
+      if (MOCK_USERS.some((u) => u.username === username)) return { ok: false, error: "To korisničko ime je zauzeto." };
     }
-    const profile = { ...state.profile, username, avatar: patch.avatar ?? state.profile.avatar };
-    this.save({ ...state, profile });
+    const profile = { ...s.profile, username, avatar: patch.avatar ?? s.profile.avatar };
+    this.save({ ...s, profile });
     return { ok: true, value: profile };
   }
 
-  async getChallenge(dateKey: string): Promise<PublicChallenge> {
-    return toPublic(getChallengeForDate(dateKey));
+  async getDaily(date: string): Promise<DailyStatus> {
+    const s = this.load();
+    const number = challengeNumber(date);
+    if (s.results[date]) return { date, number, state: "finished", result: s.results[date], startedAt: s.started[date] };
+    if (s.started[date]) return { date, number, state: "playing", startedAt: s.started[date] };
+    return { date, number, state: "new" };
   }
 
-  async getAttempt(challengeId: string) {
-    return this.load().attempts[challengeId] ?? null;
+  async startDaily(date: string) {
+    const s = this.load();
+    if (s.results[date]) return { ok: true as const, value: { startedAt: s.started[date] ?? 0, state: "finished" as const, result: s.results[date] } };
+    const startedAt = s.started[date] ?? Date.now();
+    if (!s.started[date]) this.save({ ...s, started: { ...s.started, [date]: startedAt } });
+    return { ok: true as const, value: { startedAt, state: "playing" as const } };
   }
 
-  async startAttempt(challenge: PublicChallenge): Promise<Attempt> {
-    const state = this.load();
-    const existing = state.attempts[challenge.id];
-    if (existing) return existing;
-    const attempt = newAttempt(challenge);
-    this.save({ ...state, attempts: { ...state.attempts, [challenge.id]: attempt } });
-    return attempt;
+  /** Ovdje lokalni „server": isti replay i iste provjere kao API ruta u Supabase načinu. */
+  async finishDaily(date: string, log: LogEntry[]): Promise<Result<GameResult>> {
+    const s = this.load();
+    if (s.results[date]) return { ok: true, value: s.results[date] };
+    const startedAt = s.started[date];
+    if (!startedAt) return { ok: false, error: "Partija nije započeta." };
+    const dict = await loadDictionary();
+    const rep = replayLog(dailySeed(date), log, dict);
+    if (!rep.ok) return rep;
+    const elapsed = checkElapsed(rep.value.summary.durationMs, startedAt, Date.now());
+    if (!elapsed.ok) return elapsed;
+    const result: GameResult = { ...rep.value.summary, mode: "daily", date, number: challengeNumber(date), finishedAt: new Date().toISOString() };
+    this.save({ ...s, results: { ...s.results, [date]: result } });
+    return { ok: true, value: result };
   }
 
-  private mutate(challengeId: string, fn: (a: Attempt) => Attempt): Attempt {
-    const state = this.load();
-    const current = state.attempts[challengeId];
-    if (!current) throw new Error("Attempt not started");
-    const next = fn(current);
-    this.save({ ...state, attempts: { ...state.attempts, [challengeId]: next } });
-    return next;
+  async listResults() {
+    return Object.values(this.load().results).sort((a, b) => b.date.localeCompare(a.date));
   }
 
-  async submitGuess(challengeId: string, guess: string): Promise<GuessOutcome> {
-    const challenge = getChallengeById(challengeId);
-    if (!challenge) throw new Error("Unknown challenge");
-    const state = this.load();
-    const current = state.attempts[challengeId];
-    if (!current) throw new Error("Attempt not started");
-    const outcome = applyGuess(current, challenge, guess);
-    if (outcome.attempt !== current) {
-      this.save({ ...state, attempts: { ...state.attempts, [challengeId]: outcome.attempt } });
-    }
-    return outcome;
-  }
-
-  async revealNextStage(challengeId: string) {
-    return this.mutate(challengeId, applyReveal);
-  }
-
-  async giveUp(challengeId: string) {
-    return this.mutate(challengeId, (a) => applyGiveUp(a));
-  }
-
-  async getReveal(challengeId: string): Promise<Reveal | null> {
-    const attempt = this.load().attempts[challengeId];
-    if (!attempt || attempt.status === "playing") return null;
-    const challenge = getChallengeById(challengeId);
-    return challenge ? toReveal(challenge) : null;
-  }
-
-  async listAttempts() {
-    return Object.values(this.load().attempts).sort((a, b) => a.date.localeCompare(b.date));
-  }
-
-  async listHistory(): Promise<HistoryEntry[]> {
-    const out: HistoryEntry[] = [];
-    for (const a of await this.listAttempts()) {
-      if (a.status === "playing") continue;
-      const c = getChallengeById(a.challengeId);
-      if (c) out.push({ ...a, subject: c.subject, category: c.category, image: c.stages[4] });
-    }
-    return out.reverse();
-  }
-
-  async getStreak(dateKey: string) {
-    return computeStreaks(await this.listAttempts(), dateKey);
-  }
-
-  private myPoints(attempts: Attempt[], from: string, to: string): number {
-    return attempts.filter((a) => a.status !== "playing" && a.date >= from && a.date <= to).reduce((s, a) => s + a.score, 0);
-  }
-
-  async listFriends(dateKey: string): Promise<FriendEntry[]> {
-    const { friends } = this.load();
-    return friends
-      .map((name) => MOCK_USERS.find((u) => u.username === name))
-      .filter((u): u is NonNullable<typeof u> => !!u)
-      .map((u) => ({
-        userId: u.id,
-        username: u.username,
-        avatar: u.avatar,
-        todayPoints: mockPoints(u, dateKey),
-        totalPoints: mockTotal(u, LAUNCH_DATE, dateKey),
-      }));
-  }
-
-  async addFriend(username: string, dateKey: string): Promise<Result<FriendEntry>> {
-    const name = username.trim().replace(/^@/, "").toLowerCase();
-    const state = this.load();
-    if (!name) return { ok: false, error: "Enter a username." };
-    if (state.profile?.username === name) return { ok: false, error: "That's you!" };
-    const user = MOCK_USERS.find((u) => u.username === name);
-    if (!user) return { ok: false, error: `No player named “${name}”.` };
-    if (state.friends.includes(name)) return { ok: false, error: `${name} is already your friend.` };
-    this.save({ ...state, friends: [...state.friends, name] });
+  private friendEntry(u: (typeof MOCK_USERS)[number], date: string): FriendEntry {
+    const today = mockDay(u, date);
     return {
-      ok: true,
-      value: {
-        userId: user.id,
-        username: user.username,
-        avatar: user.avatar,
-        todayPoints: mockPoints(user, dateKey),
-        totalPoints: mockTotal(user, LAUNCH_DATE, dateKey),
-      },
+      userId: u.id,
+      username: u.username,
+      avatar: u.avatar,
+      todayWords: today?.words ?? null,
+      todayScore: today?.score ?? null,
+      totalScore: mockRange(u, LAUNCH_DATE, date).score,
+      simulated: true,
     };
   }
 
-  async removeFriend(userId: string) {
-    const state = this.load();
-    const name = userId.replace(/^mock-/, "");
-    this.save({ ...state, friends: state.friends.filter((f) => f !== name) });
+  async listFriends(date: string) {
+    return this.load()
+      .friends.map((n) => MOCK_USERS.find((u) => u.username === n))
+      .filter((u): u is NonNullable<typeof u> => !!u)
+      .map((u) => this.friendEntry(u, date));
   }
 
-  async getLeaderboard(scope: LeaderboardScope, dateKey: string): Promise<LeaderboardEntry[]> {
-    const state = this.load();
-    const attempts = Object.values(state.attempts);
-    const me = state.profile;
-    const rows: Array<Omit<LeaderboardEntry, "rank"> & { played: boolean }> = [];
+  async addFriend(username: string, date: string): Promise<Result<FriendEntry>> {
+    const name = username.trim().replace(/^@/, "").toLowerCase();
+    const s = this.load();
+    if (!name) return { ok: false, error: "Upiši korisničko ime." };
+    if (s.profile?.username === name) return { ok: false, error: "To si ti!" };
+    const u = MOCK_USERS.find((x) => x.username === name);
+    if (!u) return { ok: false, error: `Nema igrača „${name}".` };
+    if (s.friends.includes(name)) return { ok: false, error: `${name} ti je već prijatelj.` };
+    this.save({ ...s, friends: [...s.friends, name] });
+    return { ok: true, value: this.friendEntry(u, date) };
+  }
+
+  async removeFriend(userId: string) {
+    const s = this.load();
+    const name = userId.replace(/^mock-/, "");
+    this.save({ ...s, friends: s.friends.filter((f) => f !== name) });
+  }
+
+  async getGhosts(date: string): Promise<Ghost[]> {
+    const out: Ghost[] = [];
+    for (const f of await this.listFriends(date)) {
+      if (f.todayWords !== null && f.todayScore !== null) {
+        out.push({ userId: f.userId, username: f.username, avatar: f.avatar, words: f.todayWords, score: f.todayScore, simulated: true });
+      }
+    }
+    return out.sort((a, b) => a.words - b.words);
+  }
+
+  async getLeaderboard(scope: LeaderboardScope, date: string): Promise<LeaderboardEntry[]> {
+    const s = this.load();
+    const me = s.profile;
+    const rows: Array<Omit<LeaderboardEntry, "rank">> = [];
+    const results = Object.values(s.results);
 
     if (scope === "friends") {
-      const friends = state.friends.map((n) => MOCK_USERS.find((u) => u.username === n)).filter((u): u is NonNullable<typeof u> => !!u);
-      for (const u of friends) {
-        const total = mockTotal(u, LAUNCH_DATE, dateKey);
-        rows.push({ userId: u.id, username: u.username, avatar: u.avatar, points: total, total, today: mockPoints(u, dateKey), isMe: false, played: true });
+      for (const n of s.friends) {
+        const u = MOCK_USERS.find((x) => x.username === n);
+        const d = u && mockDay(u, date);
+        if (u && d) rows.push({ userId: u.id, username: u.username, avatar: u.avatar, points: d.score, words: d.words, isMe: false, simulated: true });
       }
-      if (me) {
-        const total = this.myPoints(attempts, LAUNCH_DATE, dateKey);
-        const todayAttempt = attempts.find((a) => a.date === dateKey && a.status !== "playing");
-        rows.push({ userId: me.id, username: me.username, avatar: me.avatar, points: total, total, today: todayAttempt ? todayAttempt.score : null, isMe: true, played: true });
-      }
+      const mine = s.results[date];
+      if (me && mine) rows.push({ userId: me.id, username: me.username, avatar: me.avatar, points: mine.score, words: mine.words, isMe: true });
     } else {
-      const [from, to] = rangeFor(scope, dateKey);
+      const [from, to] = rangeFor(scope, date);
       for (const u of MOCK_USERS) {
-        const points = mockTotal(u, from, to);
-        const played = scope === "daily" ? mockPoints(u, dateKey) !== null : points > 0;
-        rows.push({ userId: u.id, username: u.username, avatar: u.avatar, points, isMe: false, played });
+        const r = mockRange(u, from, to);
+        if (r.played > 0) rows.push({ userId: u.id, username: u.username, avatar: u.avatar, points: r.score, words: r.words, isMe: false, simulated: true });
       }
-      if (me) {
-        const mine = attempts.filter((a) => a.status !== "playing" && a.date >= from && a.date <= to);
-        rows.push({ userId: me.id, username: me.username, avatar: me.avatar, points: mine.reduce((s, a) => s + a.score, 0), isMe: true, played: mine.length > 0 });
+      const mine = results.filter((r) => r.date >= from && r.date <= to);
+      if (me && mine.length) {
+        rows.push({
+          userId: me.id,
+          username: me.username,
+          avatar: me.avatar,
+          points: mine.reduce((a, r) => a + r.score, 0),
+          words: mine.reduce((a, r) => a + r.words, 0),
+          isMe: true,
+        });
       }
     }
 
-    const ranked = rows.filter((r) => r.played).sort((a, b) => b.points - a.points || a.username.localeCompare(b.username));
-    let lastPoints = -1;
-    let lastRank = 0;
-    return ranked.map((r, i) => {
-      const rank = r.points === lastPoints ? lastRank : i + 1;
-      lastPoints = r.points;
-      lastRank = rank;
-      const { played: _played, ...entry } = r;
-      return { ...entry, rank };
+    rows.sort((a, b) => b.points - a.points || b.words - a.words || a.username.localeCompare(b.username));
+    let rank = 0;
+    let last = "";
+    return rows.map((r, i) => {
+      const key = `${r.points}:${r.words}`;
+      if (key !== last) rank = i + 1;
+      last = key;
+      return { ...r, rank };
     });
   }
 }

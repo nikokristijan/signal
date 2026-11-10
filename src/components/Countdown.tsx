@@ -1,28 +1,30 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { formatCountdown, msUntilNextMidnight } from "@/lib/game/dates";
-import { useGame } from "./GameProvider";
+import { formatCountdown, msUntilNextMidnight, zagrebDateKey } from "@/lib/game/dates";
+import { useBomb } from "./BombProvider";
 
-/** Counts down to the next local midnight and rolls the game over to the new day when it hits zero. */
+/** Odbrojava do sljedeće ponoći u Zagrebu; u ponoć učitava novi dan. */
 export function Countdown({ className = "" }: { className?: string }) {
-  const { rollover } = useGame();
+  const { rollover } = useBomb();
   const [ms, setMs] = useState<number | null>(null);
 
   useEffect(() => {
-    let last = msUntilNextMidnight();
-    setMs(last);
+    let day = zagrebDateKey();
+    setMs(msUntilNextMidnight());
     const id = window.setInterval(() => {
-      const next = msUntilNextMidnight();
-      setMs(next);
-      if (next > last + 1000) rollover(); // wrapped past midnight
-      last = next;
+      setMs(msUntilNextMidnight());
+      const now = zagrebDateKey();
+      if (now !== day) {
+        day = now;
+        rollover();
+      }
     }, 1000);
     return () => window.clearInterval(id);
   }, [rollover]);
 
   return (
-    <span className={`tabular-nums ${className}`} aria-label="Time until the next challenge">
+    <span className={`tabular-nums ${className}`} aria-label="Vrijeme do sljedećeg izazova">
       {ms === null ? "--:--:--" : formatCountdown(ms)}
     </span>
   );

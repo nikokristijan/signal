@@ -10,9 +10,5 @@ export const AVATAR_COLORS: Record<string, string> = {
   slate: "#5d6672",
   clay: "#b0694a",
 };
-
 export const AVATAR_KEYS = Object.keys(AVATAR_COLORS);
-
-export function avatarColor(a: AvatarSpec): string {
-  return AVATAR_COLORS[a.color] ?? AVATAR_COLORS.slate;
-}
+export const avatarColor = (a: AvatarSpec) => AVATAR_COLORS[a.color] ?? AVATAR_COLORS.slate;

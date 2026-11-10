@@ -1,50 +1,44 @@
-import { addDays, daysBetween, monthStartKey, weekStartKey } from "../game/dates";
-import { STAGE_POINTS, WRONG_PENALTY } from "../game/scoring";
+import { addDays, daysBetween, LAUNCH_DATE, weekStartKey } from "../game/dates";
 import type { AvatarSpec } from "../game/types";
-import { LAUNCH_DATE } from "../data/challenges";
 
 /**
- * SIMULATED players for local demo mode only. Everything here is deterministic
- * (hash based) so the demo is stable between reloads. The Supabase adapter never
- * touches this file.
+ * SIMULIRANI igrači samo za lokalni demo. Sve je deterministički (hash) pa je demo stabilan.
+ * Supabase adapter nikad ne dira ovu datoteku.
  */
 export interface MockUser {
   id: string;
   username: string;
   avatar: AvatarSpec;
-  /** 0..1, how often they play. */
-  activity: number;
-  /** 0..1, how quickly they recognise things. */
-  skill: number;
-  /** Day offset from launch when they joined. */
-  joined: number;
+  activity: number; // 0..1, koliko često igra
+  skill: number; // 0..1
+  joined: number; // dan od lansiranja
 }
 
 const roster: Array<[string, string, number, number, number]> = [
-  ["maya", "rose", 0.95, 0.8, 0],
-  ["leo", "blue", 0.85, 0.65, 0],
-  ["noor", "violet", 0.9, 0.7, 2],
-  ["kai", "teal", 0.7, 0.55, 0],
-  ["ivy", "amber", 0.8, 0.85, 1],
-  ["otto", "clay", 0.6, 0.5, 3],
-  ["zara", "green", 0.92, 0.75, 0],
-  ["finn", "slate", 0.5, 0.45, 5],
-  ["luna", "violet", 0.78, 0.6, 1],
-  ["hugo", "blue", 0.65, 0.7, 4],
-  ["mira", "rose", 0.88, 0.62, 0],
-  ["theo", "teal", 0.55, 0.4, 6],
-  ["nina", "amber", 0.82, 0.78, 2],
-  ["jonas", "clay", 0.45, 0.58, 8],
-  ["ada", "green", 0.97, 0.9, 0],
-  ["felix", "slate", 0.72, 0.52, 3],
-  ["lena", "rose", 0.68, 0.66, 5],
-  ["marko", "blue", 0.75, 0.6, 1],
-  ["petra", "violet", 0.58, 0.72, 7],
-  ["ivan", "teal", 0.4, 0.48, 9],
-  ["sara", "amber", 0.86, 0.68, 0],
-  ["luka", "clay", 0.62, 0.54, 4],
-  ["ana", "green", 0.9, 0.82, 1],
-  ["tomas", "slate", 0.52, 0.46, 10],
+  ["ivan", "blue", 0.95, 0.8, 0],
+  ["marija", "rose", 0.9, 0.7, 0],
+  ["luka", "teal", 0.85, 0.65, 0],
+  ["ana", "amber", 0.92, 0.85, 0],
+  ["marko", "clay", 0.7, 0.55, 1],
+  ["petra", "violet", 0.8, 0.75, 1],
+  ["josip", "green", 0.6, 0.5, 2],
+  ["ivana", "rose", 0.88, 0.6, 0],
+  ["ante", "slate", 0.5, 0.45, 3],
+  ["nika", "violet", 0.78, 0.82, 1],
+  ["toma", "blue", 0.65, 0.58, 2],
+  ["lana", "amber", 0.82, 0.68, 0],
+  ["filip", "clay", 0.55, 0.4, 4],
+  ["mia", "teal", 0.9, 0.9, 0],
+  ["karlo", "green", 0.72, 0.62, 2],
+  ["dora", "rose", 0.84, 0.72, 1],
+  ["matej", "slate", 0.45, 0.5, 5],
+  ["lucija", "violet", 0.76, 0.78, 0],
+  ["borna", "blue", 0.6, 0.66, 3],
+  ["tena", "amber", 0.87, 0.6, 1],
+  ["dino", "clay", 0.5, 0.52, 6],
+  ["sara", "teal", 0.93, 0.74, 0],
+  ["leon", "green", 0.68, 0.56, 2],
+  ["ema", "rose", 0.8, 0.84, 1],
 ];
 
 export const MOCK_USERS: MockUser[] = roster.map(([username, color, activity, skill, joined]) => ({
@@ -56,7 +50,7 @@ export const MOCK_USERS: MockUser[] = roster.map(([username, color, activity, sk
   joined,
 }));
 
-export const DEFAULT_FRIENDS = ["maya", "leo", "noor"];
+export const DEFAULT_FRIENDS = ["ivan", "marija", "luka"];
 
 function hash01(str: string): number {
   let h = 2166136261;
@@ -70,34 +64,38 @@ function hash01(str: string): number {
   return (h >>> 0) / 4294967296;
 }
 
-/** Points a simulated player scored on `dateKey`, or null if they did not play. */
-export function mockPoints(user: MockUser, dateKey: string): number | null {
-  const day = daysBetween(LAUNCH_DATE, dateKey);
-  if (day < user.joined) return null;
-  if (hash01(`${user.id}:${dateKey}:play`) > user.activity) return null;
-  if (hash01(`${user.id}:${dateKey}:giveup`) < 0.04) return 0;
-  // Better players solve earlier; bias the stage with skill.
-  const r = hash01(`${user.id}:${dateKey}:stage`);
-  const stage = Math.min(5, Math.max(1, Math.ceil(Math.pow(r, 0.6 + user.skill * 1.1) * 5 + (1 - user.skill) * 1.2)));
-  const wrong = Math.floor(hash01(`${user.id}:${dateKey}:wrong`) * (stage >= 3 ? 3 : 2));
-  return Math.max(0, STAGE_POINTS[stage - 1] - wrong * WRONG_PENALTY);
+export interface MockDay {
+  words: number;
+  score: number;
 }
 
-export function mockTotal(user: MockUser, fromKey: string, toKey: string): number {
-  let sum = 0;
-  for (let d = fromKey; d <= toKey; d = addDays(d, 1)) sum += mockPoints(user, d) ?? 0;
-  return sum;
+/** Što je simulirani igrač postigao na dan `dateKey`, ili null ako nije igrao. */
+export function mockDay(user: MockUser, dateKey: string): MockDay | null {
+  if (daysBetween(LAUNCH_DATE, dateKey) < user.joined) return null;
+  if (hash01(`${user.id}:${dateKey}:igra`) > user.activity) return null;
+  const r = hash01(`${user.id}:${dateKey}:rijeci`);
+  const words = Math.max(4, Math.round(8 + user.skill * 30 + (r - 0.5) * 26));
+  const perWord = 14 + user.skill * 5 + hash01(`${user.id}:${dateKey}:bodovi`) * 4;
+  return { words, score: Math.round(words * perWord) };
 }
 
-export function rangeFor(scope: "daily" | "weekly" | "monthly" | "all", today: string): [string, string] {
-  switch (scope) {
-    case "daily":
-      return [today, today];
-    case "weekly":
-      return [weekStartKey(today), today];
-    case "monthly":
-      return [monthStartKey(today), today];
-    default:
-      return [LAUNCH_DATE, today];
+export function mockRange(user: MockUser, from: string, to: string): { score: number; words: number; played: number } {
+  let score = 0;
+  let words = 0;
+  let played = 0;
+  for (let d = from; d <= to; d = addDays(d, 1)) {
+    const r = mockDay(user, d);
+    if (r) {
+      score += r.score;
+      words += r.words;
+      played++;
+    }
   }
+  return { score, words, played };
+}
+
+export function rangeFor(scope: "daily" | "weekly" | "all", today: string): [string, string] {
+  if (scope === "daily") return [today, today];
+  if (scope === "weekly") return [weekStartKey(today), today];
+  return [LAUNCH_DATE, today];
 }

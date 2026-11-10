@@ -5,10 +5,12 @@
 @layer base {
   html {
     -webkit-text-size-adjust: 100%;
+    color-scheme: light;
   }
   body {
     @apply bg-paper text-ink font-sans antialiased;
     min-height: 100dvh;
+    overscroll-behavior-y: none;
   }
   :focus-visible {
     outline: 2px solid #4b8b5a;
@@ -18,18 +20,14 @@
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 text-[15px] font-semibold transition-colors
-      disabled:cursor-not-allowed disabled:opacity-40;
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 text-[15px] font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-40;
     min-height: 44px;
   }
   .btn-primary {
     @apply btn bg-ink text-white hover:bg-black;
   }
-  .btn-secondary {
-    @apply btn border border-line bg-white text-ink hover:bg-soft;
-  }
-  .btn-green {
-    @apply btn bg-signal text-white hover:bg-signal-dark;
+  .btn-ghost {
+    @apply btn border border-line bg-white text-ink hover:bg-raised;
   }
   .btn-lg {
     min-height: 56px;
@@ -43,24 +41,26 @@
   }
 }
 
-@keyframes zoomIn {
-  from {
-    opacity: 0;
-    transform: scale(1.07);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+/* Otkucaji bombe: brzina se mijenja preko --beat (postavlja je petlja igre). */
+@keyframes beat {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.03); }
 }
-.stage-in {
-  animation: zoomIn 380ms ease-out both;
+.bomb-beat {
+  animation: beat var(--beat, 1s) ease-in-out infinite;
+  transform-origin: 50% 62%;
+}
+@keyframes spark {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.35); opacity: 0.8; }
+}
+.spark {
+  animation: spark 140ms linear infinite;
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .stage-in,
-  .animate-fade-up,
-  .animate-ring {
-    animation: none !important;
-  }
+  .bomb-beat, .spark, .animate-fade-up, .animate-pop, .animate-bomb-in, .animate-burst, .animate-float-up { animation: none !important; }
+  .animate-shake, .animate-shake-screen { animation-duration: 1ms !important; }
 }

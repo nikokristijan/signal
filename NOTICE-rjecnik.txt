@@ -1,0 +1,18 @@
+Rječnik hrvatskih riječi (public/dict/hr.bin.gz) i popis slogova (src/lib/data/slogovi.json)
+==========================================================================================
+
+Izvor:    "Croatian spelling dictionary" (hunspell hr_HR), npm paket `dictionary-hr` 2.0.0
+          (https://github.com/wooorm/dictionaries/tree/main/dictionaries/hr)
+Autor:    Denis Lacković <delacko@linux.hr>, 2003.
+Licenca:  LGPL-2.1 ILI SISSL (po izboru primatelja). Ovdje se primjenjuje LGPL-2.1.
+          Tekst licence: https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html
+
+Što je napravljeno:
+  Skripta scripts/build-dictionary.mjs proširuje afikse (padeže, glagolske oblike…) pomoću `hunspell-reader` (MIT),
+  zadržava samo obične riječi (mala slova, 3–24 slova, sa samoglasnikom ili slogotvornim „r"), sortira ih
+  i sprema u kompaktni binarni format. Iz toga izvodi popis slogova.
+
+Datoteke public/dict/hr.bin.gz i src/lib/data/slogovi*.json izvedeno su djelo rječnika i distribuiraju se
+pod istim uvjetima kao izvor (LGPL-2.1). Izvorni oblik (hunspell .aff/.dic) dostupan je u npm paketu
+`dictionary-hr`, a postupak pretvorbe u ovom repozitoriju: `npm run rjecnik`.
+Ostatak koda (igra) nije obuhvaćen ovom licencom.

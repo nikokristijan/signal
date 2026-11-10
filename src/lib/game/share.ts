@@ -1,15 +1,18 @@
-import { STAGE_COUNT } from "./scoring";
-import type { Attempt } from "./types";
+import type { GameResult } from "./types";
 
-/** Spoiler-free share text: one square per zoom stage. */
-export function shareText(a: Attempt, url?: string): string {
-  const squares = Array.from({ length: STAGE_COUNT }, (_, i) => {
-    const n = i + 1;
-    if (a.solvedStage === n) return "🟩";
-    if (n <= a.stage) return "⬛";
-    return "⬜";
-  }).join("");
-  const head = `SIGNAL No. ${a.number}  ${a.solvedStage ? `${a.solvedStage}/${STAGE_COUNT}` : "X/5"}  ${a.score} pts`;
-  const misses = a.wrongCount ? `\n❌ × ${a.wrongCount}` : "";
-  return `${head}\n${squares}${misses}${url ? `\n${url}` : ""}`;
+/** Tekst za dijeljenje (bez spoilera: samo brojke i najduža riječ). */
+export function shareText(r: Pick<GameResult, "number" | "words" | "score" | "maxCombo" | "longest">, url?: string): string {
+  const lines = [`💣 Bomba #${r.number} · ${r.words} ${wordsLabel(r.words)} · ${r.score} bodova`];
+  const extra = [r.maxCombo > 0 ? `🔥 combo ×${r.maxCombo}` : "", r.longest ? `najduža: „${r.longest}"` : ""].filter(Boolean);
+  if (extra.length) lines.push(extra.join(" · "));
+  if (url) lines.push(url);
+  return lines.join("\n");
+}
+
+/** Hrvatska množina: 1 riječ, 2–4 riječi, 5+ riječi (i 11–14 riječi). */
+export function wordsLabel(n: number): string {
+  const m100 = n % 100;
+  const m10 = n % 10;
+  if (m10 === 1 && m100 !== 11) return "riječ";
+  return "riječi";
 }

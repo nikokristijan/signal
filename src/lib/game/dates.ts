@@ -1,49 +1,65 @@
-const pad = (n: number) => String(n).padStart(2, "0");
+/** Svi datumi igre računaju se u vremenu Europe/Zagreb: ponoć je granica za sve igrače. */
+export const TIMEZONE = "Europe/Zagreb";
+/** Dan #1. Broj izazova = dani od lansiranja + 1. */
+export const LAUNCH_DATE = "2026-10-30";
 
-/** YYYY-MM-DD in the user's local timezone. */
-export function localDateKey(d: Date = new Date()): string {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const keyFmt = new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" });
+
+/** YYYY-MM-DD u Zagrebu. */
+export function zagrebDateKey(d: Date = new Date()): string {
+  return keyFmt.format(d);
 }
 
-export function parseDateKey(key: string): Date {
+function utcDay(key: string): number {
   const [y, m, d] = key.split("-").map(Number);
-  return new Date(y, m - 1, d, 12, 0, 0); // noon avoids DST edge cases
+  return Date.UTC(y, m - 1, d) / 86_400_000;
 }
 
 export function addDays(key: string, n: number): string {
-  const d = parseDateKey(key);
-  d.setDate(d.getDate() + n);
-  return localDateKey(d);
+  return new Date((utcDay(key) + n) * 86_400_000).toISOString().slice(0, 10);
 }
 
 export function daysBetween(fromKey: string, toKey: string): number {
-  return Math.round((parseDateKey(toKey).getTime() - parseDateKey(fromKey).getTime()) / 86_400_000);
+  return utcDay(toKey) - utcDay(fromKey);
 }
 
-/** Monday of the week containing `key`. */
+export function challengeNumber(dateKey: string): number {
+  return Math.max(1, daysBetween(LAUNCH_DATE, dateKey) + 1);
+}
+
+/** Seed dnevnog izazova: svi taj dan dobiju isti niz slogova. */
+export function dailySeed(dateKey: string): string {
+  return `bomba:${dateKey}`;
+}
+
+/** Ponedjeljak tjedna u kojem je `key`. */
 export function weekStartKey(key: string): string {
-  const d = parseDateKey(key);
-  const dow = (d.getDay() + 6) % 7; // Monday = 0
+  const dow = (new Date(utcDay(key) * 86_400_000).getUTCDay() + 6) % 7;
   return addDays(key, -dow);
 }
 
-export function monthStartKey(key: string): string {
-  return key.slice(0, 8) + "01";
-}
-
+/**
+ * Milisekunde do sljedeće ponoći u Zagrebu (točno i na dane promjene sata: bisekcija po datumskom ključu).
+ */
 export function msUntilNextMidnight(now: Date = new Date()): number {
-  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
-  return next.getTime() - now.getTime();
+  const today = zagrebDateKey(now);
+  let lo = 0; // ovdje je još „danas"
+  let hi = 26 * 3_600_000; // ovdje je sigurno sutra
+  while (hi - lo > 250) {
+    const mid = (lo + hi) >> 1;
+    if (zagrebDateKey(new Date(now.getTime() + mid)) === today) lo = mid;
+    else hi = mid;
+  }
+  return hi;
 }
 
 export function formatCountdown(ms: number): string {
-  const total = Math.max(0, Math.floor(ms / 1000));
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  return `${pad(h)}:${pad(m)}:${pad(s)}`;
+  const total = Math.max(0, Math.ceil(ms / 1000));
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(Math.floor(total / 3600))}:${p(Math.floor((total % 3600) / 60))}:${p(total % 60)}`;
 }
 
-export function formatLongDate(key: string): string {
-  return parseDateKey(key).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+export function formatDate(key: string): string {
+  const [y, m, d] = key.split("-").map(Number);
+  return `${d}. ${m}. ${y}.`;
 }

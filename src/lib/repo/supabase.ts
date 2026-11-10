@@ -1,68 +1,31 @@
-import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type {
-  Attempt,
-  AvatarSpec,
-  FriendEntry,
-  Guess,
-  GuessOutcome,
-  HistoryEntry,
-  LeaderboardEntry,
-  LeaderboardScope,
-  Profile,
-  PublicChallenge,
-  Result,
-  Reveal,
-  Verdict,
-} from "../game/types";
-import type { GameRepository } from "./types";
+import { createBrowser } from "../supabase/browser";
+import { challengeNumber } from "../game/dates";
+import type { AvatarSpec, FriendEntry, GameResult, Ghost, LeaderboardEntry, LeaderboardScope, LogEntry, Profile, Result } from "../game/types";
+import type { BombRepository, DailyStatus } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-
 const USERNAME_RE = /^[a-z0-9_]{3,16}$/;
 
-/** Stage images are never linked directly: /api/stage signs a short-lived URL, only for revealed stages. */
-const stageUrl = (challengeId: string, stage: number) => `/api/stage?challenge=${encodeURIComponent(challengeId)}&stage=${stage}`;
-
-/** Maps a daily_attempts row (snake_case, from the database) to the Attempt the UI uses. */
-function toAttempt(row: any, number: number, date: string): Attempt {
-  return {
-    challengeId: row.challenge_id,
-    date,
-    number,
-    stage: row.stage,
-    guesses: (row.guesses ?? []) as Guess[],
-    wrongCount: row.wrong_count,
-    status: row.status,
-    score: row.score,
-    solvedStage: row.solved_stage ?? null,
-    startedAt: row.started_at,
-    finishedAt: row.finished_at ?? null,
-  };
-}
-
 /**
- * Supabase-backed repository. Business rules (answer checking, scoring, streaks,
- * leaderboards) live in Postgres functions — see supabase/migrations/0001_init.sql.
- * This class only translates between those functions and the UI's types.
+ * Supabase pozadina. Pravila igre (provjera slogova, rječnika, bodovanje) NE žive ovdje nego na serveru:
+ * /api/igra/kraj ponovno odigra zapis. Ova klasa samo prevodi između API-ja/RPC-a i tipova sučelja.
  */
-export class SupabaseRepository implements GameRepository {
+export class SupabaseRepository implements BombRepository {
   readonly mode = "supabase" as const;
   private client: SupabaseClient;
-  /** Remember number/date per challenge id: daily_attempts rows don't carry them. */
-  private meta = new Map<string, { number: number; date: string }>();
 
   constructor(url: string, anonKey: string) {
-    this.client = createBrowserClient(url, anonKey);
+    this.client = createBrowser(url, anonKey);
   }
 
   readonly auth = {
-    signInWithEmail: async (email: string, username: string): Promise<Result<true>> => {
-      if (username && !USERNAME_RE.test(username)) return { ok: false, error: "Username must be 3–16 letters, numbers or underscores." };
-      const { error } = await this.client.auth.signInWithOtp({
-        email,
-        options: { emailRedirectTo: window.location.origin, data: username ? { username } : undefined },
-      });
+    linkEmail: async (email: string): Promise<Result<true>> => {
+      const { error } = await this.client.auth.updateUser({ email }, { emailRedirectTo: window.location.origin });
+      return error ? { ok: false, error: error.message } : { ok: true, value: true };
+    },
+    signInWithEmail: async (email: string): Promise<Result<true>> => {
+      const { error } = await this.client.auth.signInWithOtp({ email, options: { shouldCreateUser: false, emailRedirectTo: window.location.origin } });
       return error ? { ok: false, error: error.message } : { ok: true, value: true };
     },
     signOut: async () => {
@@ -76,119 +39,106 @@ export class SupabaseRepository implements GameRepository {
     return data as T;
   }
 
-  async getProfile(): Promise<Profile | null> {
-    const { data: auth } = await this.client.auth.getUser();
-    if (!auth.user) return null;
-    const { data, error } = await this.client.from("profiles").select("id, username, avatar_color").eq("id", auth.user.id).maybeSingle();
-    if (error || !data) return null;
-    return { id: data.id, username: data.username, avatar: { color: data.avatar_color } };
+  private async api<T = any>(path: string, init?: RequestInit): Promise<{ ok: boolean; status: number; body: T }> {
+    const res = await fetch(path, { ...init, headers: { "Content-Type": "application/json", ...(init?.headers ?? {}) }, credentials: "same-origin" });
+    let body: any = null;
+    try {
+      body = await res.json();
+    } catch {
+      /* prazno tijelo */
+    }
+    return { ok: res.ok, status: res.status, body };
   }
 
-  ensureProfile() {
-    return this.getProfile();
+  /** Bez trenja: anonimna prijava, korisničko ime se bira kasnije (profil nastaje okidačem u bazi). */
+  async ensureProfile(): Promise<Profile | null> {
+    let { data } = await this.client.auth.getUser();
+    if (!data.user) {
+      const res = await this.client.auth.signInAnonymously();
+      if (res.error || !res.data.user) return null;
+      data = { user: res.data.user };
+    }
+    const user = data.user!;
+    const { data: row } = await this.client.from("profiles").select("id, username, avatar_color").eq("id", user.id).maybeSingle();
+    if (!row) return null;
+    return { id: row.id, username: row.username, avatar: { color: row.avatar_color }, anonymous: Boolean(user.is_anonymous), email: user.email ?? null };
   }
 
   async updateProfile(patch: { username?: string; avatar?: AvatarSpec }): Promise<Result<Profile>> {
-    const me = await this.getProfile();
-    if (!me) return { ok: false, error: "Sign in first." };
+    const me = await this.ensureProfile();
+    if (!me) return { ok: false, error: "Nisi prijavljen." };
     const update: Record<string, string> = {};
     if (patch.username !== undefined) {
       const u = patch.username.trim().toLowerCase();
-      if (!USERNAME_RE.test(u)) return { ok: false, error: "Use 3–16 letters, numbers or underscores." };
+      if (!USERNAME_RE.test(u)) return { ok: false, error: "3–16 znakova: mala slova, brojevi ili _." };
       update.username = u;
     }
     if (patch.avatar) update.avatar_color = patch.avatar.color;
     const { error } = await this.client.from("profiles").update(update).eq("id", me.id);
-    if (error) return { ok: false, error: error.code === "23505" ? "That username is taken." : error.message };
-    return { ok: true, value: (await this.getProfile())! };
+    if (error) return { ok: false, error: error.code === "23505" ? "To korisničko ime je zauzeto." : error.message };
+    return { ok: true, value: (await this.ensureProfile())! };
   }
 
-  async getChallenge(dateKey: string): Promise<PublicChallenge> {
-    const rows = await this.rpc<any[]>("get_challenge", { p_date: dateKey });
-    const row = rows?.[0];
-    if (!row) throw new Error("No challenge published for this date.");
-    this.meta.set(row.id, { number: row.number, date: row.publish_date });
-    return { id: row.id, number: row.number, date: row.publish_date, stages: [1, 2, 3, 4, 5].map((n) => stageUrl(row.id, n)) };
+  async getDaily(date: string): Promise<DailyStatus> {
+    const r = await this.api<DailyStatus>(`/api/igra/stanje?date=${encodeURIComponent(date)}`);
+    if (!r.ok) return { date, number: challengeNumber(date), state: "new" };
+    return r.body;
   }
 
-  private attemptFrom(row: any): Attempt {
-    const m = this.meta.get(row.challenge_id) ?? { number: 0, date: "" };
-    return toAttempt(row, m.number, m.date);
+  async startDaily(_date: string) {
+    const r = await this.api<{ startedAt: number; state: DailyStatus["state"]; result?: GameResult; error?: string }>("/api/igra/start", { method: "POST" });
+    if (!r.ok) return { ok: false as const, error: r.body?.error ?? "Partija se nije mogla započeti." };
+    return { ok: true as const, value: r.body };
   }
 
-  async getAttempt(challengeId: string): Promise<Attempt | null> {
-    const { data, error } = await this.client.from("daily_attempts").select("*").eq("challenge_id", challengeId).maybeSingle();
-    if (error || !data) return null;
-    return this.attemptFrom(data);
+  async finishDaily(date: string, log: LogEntry[]): Promise<Result<GameResult>> {
+    const r = await this.api<{ result?: GameResult; error?: string }>("/api/igra/kraj", { method: "POST", body: JSON.stringify({ date, log }) });
+    if (!r.ok || !r.body?.result) return { ok: false, error: r.body?.error ?? "Rezultat se nije mogao spremiti." };
+    return { ok: true, value: r.body.result };
   }
 
-  async startAttempt(challenge: PublicChallenge): Promise<Attempt> {
-    this.meta.set(challenge.id, { number: challenge.number, date: challenge.date });
-    return this.attemptFrom(await this.rpc("start_attempt", { p_challenge: challenge.id }));
-  }
-
-  async submitGuess(challengeId: string, guess: string): Promise<GuessOutcome> {
-    const res = await this.rpc<{ verdict: Verdict; penalty: number; attempt: any }>("submit_guess", { p_challenge: challengeId, p_guess: guess });
-    return { verdict: res.verdict, penalty: res.penalty, attempt: this.attemptFrom(res.attempt) };
-  }
-
-  async revealNextStage(challengeId: string) {
-    return this.attemptFrom(await this.rpc("reveal_stage", { p_challenge: challengeId }));
-  }
-
-  async giveUp(challengeId: string) {
-    return this.attemptFrom(await this.rpc("give_up", { p_challenge: challengeId }));
-  }
-
-  async getReveal(challengeId: string): Promise<Reveal | null> {
-    const r = await this.rpc<any>("get_reveal", { p_challenge: challengeId });
-    return r ?? null;
-  }
-
-  async listAttempts(): Promise<Attempt[]> {
-    const { data, error } = await this.client.from("daily_attempts").select("*, challenges:challenge_id(number, publish_date)");
+  async listResults(): Promise<GameResult[]> {
+    const { data, error } = await this.client
+      .from("games")
+      .select("challenge_date, challenge_number, score, words, max_combo, longest, word_list, booms, duration_ms, finished_at")
+      .eq("status", "finished")
+      .order("challenge_date", { ascending: false });
     if (error) throw new Error(error.message);
-    return (data ?? []).map((row: any) => toAttempt(row, row.challenges?.number ?? 0, row.challenges?.publish_date ?? ""));
-  }
-
-  async listHistory(): Promise<HistoryEntry[]> {
-    const rows = await this.rpc<any[]>("get_history");
-    return (rows ?? []).map((r) => ({
-      ...toAttempt(r, r.number, r.publish_date),
-      subject: r.subject,
-      category: r.category,
-      image: stageUrl(r.challenge_id, 5),
+    return (data ?? []).map((g: any) => ({
+      mode: "daily" as const,
+      date: g.challenge_date,
+      number: g.challenge_number,
+      score: g.score,
+      words: g.words,
+      maxCombo: g.max_combo,
+      longest: g.longest ?? "",
+      wordList: g.word_list ?? [],
+      booms: g.booms ?? 0,
+      durationMs: g.duration_ms ?? 0,
+      finishedAt: g.finished_at,
     }));
   }
 
-  async getStreak(dateKey: string) {
-    const rows = await this.rpc<any[]>("get_streak", { p_today: dateKey });
-    const r = rows?.[0];
-    return { current: r?.current_streak ?? 0, longest: r?.longest_streak ?? 0 };
-  }
-
-  async listFriends(dateKey: string): Promise<FriendEntry[]> {
-    const rows = await this.rpc<any[]>("list_friends", { p_today: dateKey });
+  async listFriends(date: string): Promise<FriendEntry[]> {
+    const rows = await this.rpc<any[]>("list_friends", { p_date: date });
     return (rows ?? []).map((r) => ({
       userId: r.user_id,
       username: r.username,
       avatar: { color: r.avatar_color },
-      todayPoints: r.today_points ?? null,
-      totalPoints: Number(r.total_points),
+      todayWords: r.today_words ?? null,
+      todayScore: r.today_points ?? null,
+      totalScore: Number(r.total_points),
     }));
   }
 
-  async addFriend(username: string, dateKey: string): Promise<Result<FriendEntry>> {
+  async addFriend(username: string, date: string): Promise<Result<FriendEntry>> {
     try {
       const rows = await this.rpc<any[]>("add_friend", { p_username: username.replace(/^@/, "") });
-      const r = rows[0];
-      const friends = await this.listFriends(dateKey);
-      return {
-        ok: true,
-        value: friends.find((f) => f.userId === r.user_id) ?? { userId: r.user_id, username: r.username, avatar: { color: r.avatar_color }, todayPoints: null, totalPoints: 0 },
-      };
+      const friends = await this.listFriends(date);
+      const f = friends.find((x) => x.userId === rows[0].user_id);
+      return { ok: true, value: f ?? { userId: rows[0].user_id, username: rows[0].username, avatar: { color: rows[0].avatar_color }, todayWords: null, todayScore: null, totalScore: 0 } };
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : "Could not add friend." };
+      return { ok: false, error: e instanceof Error ? e.message : "Prijatelj se nije mogao dodati." };
     }
   }
 
@@ -196,16 +146,21 @@ export class SupabaseRepository implements GameRepository {
     await this.rpc("remove_friend", { p_friend: userId });
   }
 
-  async getLeaderboard(scope: LeaderboardScope, dateKey: string): Promise<LeaderboardEntry[]> {
-    const [rows, me] = await Promise.all([this.rpc<any[]>("leaderboard", { p_scope: scope, p_today: dateKey }), this.getProfile()]);
+  async getGhosts(date: string): Promise<Ghost[]> {
+    const rows = await this.rpc<any[]>("friends_today", { p_date: date });
+    return (rows ?? []).map((r) => ({ userId: r.user_id, username: r.username, avatar: { color: r.avatar_color }, words: r.words, score: r.points }));
+  }
+
+  async getLeaderboard(scope: LeaderboardScope, date: string): Promise<LeaderboardEntry[]> {
+    const [rows, me] = await Promise.all([this.rpc<any[]>("leaderboard", { p_scope: scope, p_date: date }), this.client.auth.getUser()]);
     return (rows ?? []).map((r) => ({
       rank: Number(r.rank),
       userId: r.user_id,
       username: r.username,
       avatar: { color: r.avatar_color },
       points: Number(r.points),
-      isMe: r.user_id === me?.id,
-      ...(scope === "friends" ? { today: r.today_points ?? null, total: Number(r.points) } : {}),
+      words: Number(r.words),
+      isMe: r.user_id === me.data.user?.id,
     }));
   }
 }
