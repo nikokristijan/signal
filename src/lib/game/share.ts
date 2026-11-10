@@ -9,7 +9,7 @@ export function shareText(a: Attempt, url?: string): string {
     if (n <= a.stage) return "⬛";
     return "⬜";
   }).join("");
-  const head = `SIGNAL No. ${a.number}  ${a.solvedStage ? `${a.solvedStage}/${STAGE_COUNT}` : "X/5"}  ${a.score} pts`;
+  const head = `SIGNAL br. ${a.number}  ${a.solvedStage ? `${a.solvedStage}/${STAGE_COUNT}` : "X/5"}  ${a.score} bod.`;
   const misses = a.wrongCount ? `\n❌ × ${a.wrongCount}` : "";
   return `${head}\n${squares}${misses}${url ? `\n${url}` : ""}`;
 }

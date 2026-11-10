@@ -1,5 +1,6 @@
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { translateDbError } from "@/lib/i18n";
 import type {
   Attempt,
   AvatarSpec,
@@ -58,7 +59,7 @@ export class SupabaseRepository implements GameRepository {
 
   readonly auth = {
     signInWithEmail: async (email: string, username: string): Promise<Result<true>> => {
-      if (username && !USERNAME_RE.test(username)) return { ok: false, error: "Username must be 3–16 letters, numbers or underscores." };
+      if (username && !USERNAME_RE.test(username)) return { ok: false, error: "Korisničko ime mora imati 3–16 slova, brojki ili podvlaka." };
       const { error } = await this.client.auth.signInWithOtp({
         email,
         options: { emailRedirectTo: window.location.origin, data: username ? { username } : undefined },
@@ -90,16 +91,16 @@ export class SupabaseRepository implements GameRepository {
 
   async updateProfile(patch: { username?: string; avatar?: AvatarSpec }): Promise<Result<Profile>> {
     const me = await this.getProfile();
-    if (!me) return { ok: false, error: "Sign in first." };
+    if (!me) return { ok: false, error: "Prvo se prijavi." };
     const update: Record<string, string> = {};
     if (patch.username !== undefined) {
       const u = patch.username.trim().toLowerCase();
-      if (!USERNAME_RE.test(u)) return { ok: false, error: "Use 3–16 letters, numbers or underscores." };
+      if (!USERNAME_RE.test(u)) return { ok: false, error: "Koristi 3–16 slova, brojki ili podvlaka." };
       update.username = u;
     }
     if (patch.avatar) update.avatar_color = patch.avatar.color;
     const { error } = await this.client.from("profiles").update(update).eq("id", me.id);
-    if (error) return { ok: false, error: error.code === "23505" ? "That username is taken." : error.message };
+    if (error) return { ok: false, error: error.code === "23505" ? "To korisničko ime je zauzeto." : error.message };
     return { ok: true, value: (await this.getProfile())! };
   }
 
@@ -188,7 +189,7 @@ export class SupabaseRepository implements GameRepository {
         value: friends.find((f) => f.userId === r.user_id) ?? { userId: r.user_id, username: r.username, avatar: { color: r.avatar_color }, todayPoints: null, totalPoints: 0 },
       };
     } catch (e) {
-      return { ok: false, error: e instanceof Error ? e.message : "Could not add friend." };
+      return { ok: false, error: e instanceof Error ? translateDbError(e.message) : "Nije moguće dodati prijatelja." };
     }
   }
 

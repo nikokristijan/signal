@@ -50,7 +50,7 @@ export default function PlayPage() {
           <ResultCard attempt={attempt} reveal={reveal} />
           <p className="mt-6 text-center text-sm">
             <Link href="/stats" className="text-muted underline underline-offset-2 hover:text-ink">
-              See your stats &amp; history
+              Pogledaj statistiku i povijest
             </Link>
           </p>
         </>

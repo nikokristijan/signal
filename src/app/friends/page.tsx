@@ -11,14 +11,14 @@ export default function FriendsPage() {
   if (!profile) return <Page><AuthGate /></Page>;
   return (
     <Page>
-      <h1 className="text-3xl font-extrabold tracking-tight">Friends &amp; profile</h1>
+      <h1 className="text-3xl font-extrabold tracking-tight">Prijatelji i profil</h1>
       <div className="mt-4">
         <ProfileCard />
       </div>
       <FriendsList />
       {repo?.auth && (
         <button className="mt-8 text-sm text-muted underline underline-offset-2" onClick={() => void repo.auth!.signOut().then(() => window.location.assign("/"))}>
-          Sign out
+          Odjava
         </button>
       )}
     </Page>

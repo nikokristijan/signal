@@ -10,20 +10,20 @@ export function Header({ challengeNumber }: { challengeNumber?: number }) {
   return (
     <header className="sticky top-0 z-10 border-b border-line bg-paper/95 backdrop-blur">
       <div className="mx-auto grid h-14 max-w-xl grid-cols-[1fr_auto_1fr] items-center px-2">
-        <nav className="flex justify-start" aria-label="Friends">
-          <Link href="/friends" className={iconBtn} aria-label="Friends and profile" title="Friends">
+        <nav className="flex justify-start" aria-label="Prijatelji">
+          <Link href="/friends" className={iconBtn} aria-label="Prijatelji i profil" title="Prijatelji">
             <Users size={22} strokeWidth={1.8} />
           </Link>
         </nav>
         <div className="flex flex-col items-center leading-none">
           <Logo className="text-[22px]" />
-          {challengeNumber !== undefined && <span className="mt-1 text-[11px] font-medium tracking-wide text-muted">No. {challengeNumber}</span>}
+          {challengeNumber !== undefined && <span className="mt-1 text-[11px] font-medium tracking-wide text-muted">br. {challengeNumber}</span>}
         </div>
-        <nav className="flex justify-end" aria-label="Stats and leaderboard">
-          <Link href="/stats" className={iconBtn} aria-label="Statistics" title="Statistics">
+        <nav className="flex justify-end" aria-label="Statistika i ljestvica">
+          <Link href="/stats" className={iconBtn} aria-label="Statistika" title="Statistika">
             <BarChart3 size={22} strokeWidth={1.8} />
           </Link>
-          <Link href="/leaderboard" className={iconBtn} aria-label="Leaderboard" title="Leaderboard">
+          <Link href="/leaderboard" className={iconBtn} aria-label="Ljestvica" title="Ljestvica">
             <Trophy size={22} strokeWidth={1.8} />
           </Link>
         </nav>

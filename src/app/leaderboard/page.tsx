@@ -9,11 +9,11 @@ import { Loading, Page } from "@/components/Page";
 import type { LeaderboardEntry, LeaderboardScope } from "@/lib/game/types";
 
 const TABS: Array<{ id: LeaderboardScope; label: string }> = [
-  { id: "friends", label: "Friends" },
-  { id: "daily", label: "Daily" },
-  { id: "weekly", label: "Weekly" },
-  { id: "monthly", label: "Monthly" },
-  { id: "all", label: "All-time" },
+  { id: "friends", label: "Prijatelji" },
+  { id: "daily", label: "Dnevno" },
+  { id: "weekly", label: "Tjedno" },
+  { id: "monthly", label: "Mjesečno" },
+  { id: "all", label: "Ukupno" },
 ];
 
 export default function LeaderboardPage() {
@@ -39,8 +39,8 @@ export default function LeaderboardPage() {
 
   return (
     <Page>
-      <h1 className="text-3xl font-extrabold tracking-tight">Leaderboard</h1>
-      <div role="tablist" aria-label="Leaderboard period" className="-mx-4 mt-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
+      <h1 className="text-3xl font-extrabold tracking-tight">Ljestvica</h1>
+      <div role="tablist" aria-label="Razdoblje ljestvice" className="-mx-4 mt-4 flex gap-1.5 overflow-x-auto px-4 pb-1">
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -61,7 +61,7 @@ export default function LeaderboardPage() {
         {rows === null ? (
           <Loading />
         ) : rows.length === 0 ? (
-          <p className="tile px-4 py-8 text-center text-muted">Nobody has scored yet.</p>
+          <p className="tile px-4 py-8 text-center text-muted">Još nitko nema bodova.</p>
         ) : (
           <LeaderboardTable rows={rows} friends={scope === "friends"} />
         )}
@@ -69,16 +69,16 @@ export default function LeaderboardPage() {
 
       {rows && scope !== "friends" && !me && (
         <p className="mt-3 text-center text-sm text-muted">
-          {playedToday || scope === "all" ? "You're not on this board yet." : (
+          {playedToday || scope === "all" ? "Još nisi na ovoj ljestvici." : (
             <>
-              <Link href="/play" className="font-semibold text-ink underline underline-offset-2">Play today&apos;s challenge</Link> to appear here.
+              <Link href="/play" className="font-semibold text-ink underline underline-offset-2">Odigraj današnji izazov</Link> da se pojaviš ovdje.
             </>
           )}
         </p>
       )}
       {repo?.mode === "local" && (
         <p className="mt-6 text-center text-xs text-muted" data-testid="demo-note">
-          Demo mode: other players are simulated and your data stays in this browser. Connect Supabase for real friends and rankings.
+          Demo način: ostali igrači su izmišljeni, a tvoji podaci ostaju u ovom pregledniku. Spoji Supabase za prave prijatelje i ljestvice.
         </p>
       )}
     </Page>

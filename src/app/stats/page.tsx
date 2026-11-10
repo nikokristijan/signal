@@ -41,19 +41,19 @@ export default function StatsPage() {
 
   return (
     <Page>
-      <h1 className="text-3xl font-extrabold tracking-tight">Statistics</h1>
+      <h1 className="text-3xl font-extrabold tracking-tight">Statistika</h1>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
-        <Tile label="Total points" value={stats.totalPoints.toLocaleString()} testid="stat-total" />
-        <Tile label="Daily streak" value={String(stats.currentStreak)} sub={`best ${stats.longestStreak}`} testid="stat-streak" />
-        <Tile label="Avg. stage" value={stats.averageStage === null ? "—" : stats.averageStage.toFixed(1)} sub={`of ${STAGE_COUNT}`} testid="stat-avg-stage" />
-        <Tile label="Correct" value={`${stats.correctPercent}%`} sub={`${stats.solved} solved`} testid="stat-correct" />
-        <Tile label="Best daily score" value={String(stats.bestScore)} testid="stat-best" />
-        <Tile label="Completed" value={String(stats.completed)} sub="challenges" testid="stat-completed" />
+        <Tile label="Ukupno bodova" value={stats.totalPoints.toLocaleString("hr-HR")} testid="stat-total" />
+        <Tile label="Dnevni niz" value={String(stats.currentStreak)} sub={`najbolji ${stats.longestStreak}`} testid="stat-streak" />
+        <Tile label="Prosj. zoom" value={stats.averageStage === null ? "—" : stats.averageStage.toFixed(1)} sub={`od ${STAGE_COUNT}`} testid="stat-avg-stage" />
+        <Tile label="Točno" value={`${stats.correctPercent}%`} sub={`riješeno: ${stats.solved}`} testid="stat-correct" />
+        <Tile label="Najbolji dan" value={String(stats.bestScore)} testid="stat-best" />
+        <Tile label="Odigrano" value={String(stats.completed)} sub="izazova" testid="stat-completed" />
       </div>
 
       <section className="tile mt-4 px-4 py-4" aria-labelledby="dist">
         <h2 id="dist" className="label">
-          Solved at zoom stage
+          Riješeno na razini zooma
         </h2>
         <ul className="mt-3 space-y-1.5">
           {stats.stageDistribution.map((n, i) => (
@@ -69,12 +69,12 @@ export default function StatsPage() {
         </ul>
       </section>
 
-      <h2 className="mt-8 text-xl font-bold">History</h2>
+      <h2 className="mt-8 text-xl font-bold">Povijest</h2>
       {history === null ? (
         <Loading />
       ) : history.length === 0 ? (
         <p className="tile mt-3 px-4 py-8 text-center text-muted">
-          No finished challenges yet. <Link href="/play" className="font-semibold text-ink underline underline-offset-2">Play today&apos;s</Link>.
+          Još nema odigranih izazova. <Link href="/play" className="font-semibold text-ink underline underline-offset-2">Odigraj današnji</Link>.
         </p>
       ) : (
         <ul className="mt-3 space-y-2" data-testid="history">
@@ -85,8 +85,8 @@ export default function StatsPage() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-semibold">{h.subject}</p>
                 <p className="text-xs text-muted">
-                  No. {h.number} · {formatLongDate(h.date)} · {h.status === "solved" ? `zoom ${h.solvedStage}/${STAGE_COUNT}` : "gave up"}
-                  {h.wrongCount ? ` · ${h.wrongCount} wrong` : ""}
+                  br. {h.number} · {formatLongDate(h.date)} · {h.status === "solved" ? `zoom ${h.solvedStage}/${STAGE_COUNT}` : "odustao/la"}
+                  {h.wrongCount ? ` · krivo: ${h.wrongCount}` : ""}
                 </p>
               </div>
               <p className={`text-lg font-extrabold tabular-nums ${h.status === "solved" ? "text-signal-dark" : "text-muted"}`}>{h.score}</p>

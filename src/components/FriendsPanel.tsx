@@ -23,7 +23,7 @@ export function ProfileCard() {
     const res = await repo!.updateProfile({ username: name });
     if (res.ok) {
       setProfile(res.value);
-      setMsg({ ok: true, text: "Saved." });
+      setMsg({ ok: true, text: "Spremljeno." });
     } else setMsg({ ok: false, text: res.error });
   }
 
@@ -45,7 +45,7 @@ export function ProfileCard() {
   return (
     <section className="tile px-4 py-4" aria-labelledby="profile-h">
       <h2 id="profile-h" className="label">
-        Your profile
+        Tvoj profil
       </h2>
       <div className="mt-3 flex items-center gap-3">
         <Avatar username={profile.username} avatar={profile.avatar} size={52} />
@@ -56,14 +56,14 @@ export function ProfileCard() {
               setName(e.target.value);
               setMsg(null);
             }}
-            aria-label="Username"
+            aria-label="Korisničko ime"
             maxLength={16}
             autoCapitalize="none"
             spellCheck={false}
             className="min-w-0 flex-1 rounded-full border border-line bg-white px-4 py-2.5 outline-none focus:border-ink"
           />
           <button className="btn-secondary" disabled={name.trim().toLowerCase() === profile.username}>
-            Save
+            Spremi
           </button>
         </form>
       </div>
@@ -72,7 +72,7 @@ export function ProfileCard() {
           {msg.text}
         </p>
       )}
-      <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Avatar colour">
+      <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Boja avatara">
         {AVATAR_KEYS.map((k) => (
           <button
             key={k}
@@ -87,15 +87,15 @@ export function ProfileCard() {
       </div>
 
       <div className="mt-4 border-t border-line pt-3">
-        <p className="text-sm font-semibold">Invite friends</p>
-        <p className="text-sm text-muted">Share your username or this link. Friends don&apos;t need to play at the same time.</p>
+        <p className="text-sm font-semibold">Pozovi prijatelje</p>
+        <p className="text-sm text-muted">Podijeli korisničko ime ili ovaj link. Prijatelji ne moraju igrati u isto vrijeme.</p>
         <div className="mt-2 flex items-center gap-2">
           <code className="min-w-0 flex-1 truncate rounded-full bg-soft px-4 py-2.5 text-sm" data-testid="invite-link">
             {link}
           </code>
-          <button className="btn-secondary" onClick={copy} aria-label="Copy invite link">
+          <button className="btn-secondary" onClick={copy} aria-label="Kopiraj link za poziv">
             {copied ? <Check size={16} aria-hidden /> : <Copy size={16} aria-hidden />}
-            {copied ? "Copied" : "Copy"}
+            {copied ? "Kopirano" : "Kopiraj"}
           </button>
         </div>
       </div>
@@ -122,7 +122,7 @@ export function FriendsList() {
     if (!repo) return;
     const res = await repo.addFriend(name, today);
     if (res.ok) {
-      setMsg({ ok: true, text: `Added ${res.value.username}.` });
+      setMsg({ ok: true, text: `Dodan/a: ${res.value.username}.` });
       setName("");
       await load();
     } else setMsg({ ok: false, text: res.error });
@@ -136,7 +136,7 @@ export function FriendsList() {
   return (
     <section className="mt-6" aria-labelledby="friends-h">
       <h2 id="friends-h" className="text-xl font-bold">
-        Friends
+        Prijatelji
       </h2>
       <form onSubmit={add} className="mt-3 flex gap-2">
         <input
@@ -145,14 +145,14 @@ export function FriendsList() {
             setName(e.target.value);
             setMsg(null);
           }}
-          aria-label="Friend's username"
-          placeholder="Add by username"
+          aria-label="Korisničko ime prijatelja"
+          placeholder="Dodaj po korisničkom imenu"
           autoCapitalize="none"
           spellCheck={false}
           className="min-w-0 flex-1 rounded-full border border-line bg-white px-5 py-3 outline-none focus:border-ink"
         />
         <button className="btn-primary" disabled={!name.trim()} data-testid="add-friend">
-          <UserPlus size={16} aria-hidden /> Add
+          <UserPlus size={16} aria-hidden /> Dodaj
         </button>
       </form>
       {msg && (
@@ -162,7 +162,7 @@ export function FriendsList() {
       )}
 
       {friends === null ? null : friends.length === 0 ? (
-        <p className="tile mt-4 px-4 py-6 text-center text-muted">No friends yet. Add someone by username or send them your invite link.</p>
+        <p className="tile mt-4 px-4 py-6 text-center text-muted">Još nemaš prijatelja. Dodaj nekoga po korisničkom imenu ili mu pošalji link za poziv.</p>
       ) : (
         <ul className="tile mt-4 divide-y divide-line/70" data-testid="friends-list">
           {friends.map((f) => (
@@ -171,10 +171,10 @@ export function FriendsList() {
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{f.username}</p>
                 <p className="text-xs text-muted">
-                  Today {f.todayPoints === null ? "not played yet" : `${f.todayPoints} pts`} · Total {f.totalPoints.toLocaleString()}
+                  Danas {f.todayPoints === null ? "još nije igrao/la" : `${f.todayPoints} bod.`} · Ukupno {f.totalPoints.toLocaleString("hr-HR")}
                 </p>
               </div>
-              <button onClick={() => void remove(f)} className="grid h-9 w-9 place-items-center rounded-full text-muted hover:bg-soft hover:text-ink" aria-label={`Remove ${f.username}`}>
+              <button onClick={() => void remove(f)} className="grid h-9 w-9 place-items-center rounded-full text-muted hover:bg-soft hover:text-ink" aria-label={`Ukloni ${f.username}`}>
                 <UserMinus size={17} aria-hidden />
               </button>
             </li>

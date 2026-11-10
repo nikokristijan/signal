@@ -13,7 +13,7 @@ const defs = JSON.parse(await fs.readFile(path.join(root, "src/lib/data/challeng
 const only = process.argv.slice(2);
 const OUT_W = 800;
 const OUT_H = 600;
-const MIN_SOURCE_PX = 520; // never crop tighter than this many source pixels wide
+const MIN_SOURCE_PX = 180; // never crop tighter than this many source pixels wide (stage 1 is a deliberate extreme close-up)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Wikimedia throttles originals hard (Retry-After: 600) but serves standard-size thumbnails freely,

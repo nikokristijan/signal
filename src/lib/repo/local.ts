@@ -101,12 +101,12 @@ export class LocalRepository implements GameRepository {
 
   async updateProfile(patch: { username?: string; avatar?: AvatarSpec }): Promise<Result<Profile>> {
     const state = this.load();
-    if (!state.profile) return { ok: false, error: "No profile yet." };
+    if (!state.profile) return { ok: false, error: "Još nemaš profil." };
     let username = state.profile.username;
     if (patch.username !== undefined) {
       username = patch.username.trim().toLowerCase();
-      if (!USERNAME_RE.test(username)) return { ok: false, error: "Use 3–16 letters, numbers or underscores." };
-      if (MOCK_USERS.some((u) => u.username === username)) return { ok: false, error: "That username is taken." };
+      if (!USERNAME_RE.test(username)) return { ok: false, error: "Koristi 3–16 slova, brojki ili podvlaka." };
+      if (MOCK_USERS.some((u) => u.username === username)) return { ok: false, error: "To korisničko ime je zauzeto." };
     }
     const profile = { ...state.profile, username, avatar: patch.avatar ?? state.profile.avatar };
     this.save({ ...state, profile });
@@ -206,11 +206,11 @@ export class LocalRepository implements GameRepository {
   async addFriend(username: string, dateKey: string): Promise<Result<FriendEntry>> {
     const name = username.trim().replace(/^@/, "").toLowerCase();
     const state = this.load();
-    if (!name) return { ok: false, error: "Enter a username." };
-    if (state.profile?.username === name) return { ok: false, error: "That's you!" };
+    if (!name) return { ok: false, error: "Upiši korisničko ime." };
+    if (state.profile?.username === name) return { ok: false, error: "To si ti!" };
     const user = MOCK_USERS.find((u) => u.username === name);
-    if (!user) return { ok: false, error: `No player named “${name}”.` };
-    if (state.friends.includes(name)) return { ok: false, error: `${name} is already your friend.` };
+    if (!user) return { ok: false, error: `Ne postoji igrač „${name}”.` };
+    if (state.friends.includes(name)) return { ok: false, error: `${name} ti je već prijatelj.` };
     this.save({ ...state, friends: [...state.friends, name] });
     return {
       ok: true,

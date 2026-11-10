@@ -7,6 +7,7 @@ import { STAGE_COUNT, WRONG_PENALTY } from "@/lib/game/scoring";
 import { shareText } from "@/lib/game/share";
 import type { Attempt, Reveal } from "@/lib/game/types";
 import { Countdown } from "./Countdown";
+import { categoryLabel, difficultyLabel } from "@/lib/i18n";
 
 export function ResultCard({ attempt, reveal }: { attempt: Attempt; reveal: Reveal | null }) {
   const [copied, setCopied] = useState(false);
@@ -35,10 +36,10 @@ export function ResultCard({ attempt, reveal }: { attempt: Attempt; reveal: Reve
     <section className="animate-fade-up mt-5 text-center" aria-live="polite" data-testid="result" data-status={attempt.status}>
       {solved ? (
         <p className="inline-flex items-center gap-1.5 text-sm font-semibold text-signal-dark">
-          <Check size={18} aria-hidden /> Correct
+          <Check size={18} aria-hidden /> Točno
         </p>
       ) : (
-        <p className="label">Today&apos;s answer</p>
+        <p className="label">Današnji odgovor</p>
       )}
       <h2 className="mt-1 text-3xl font-extrabold tracking-tight" data-testid="answer">
         {reveal?.subject ?? "…"}
@@ -48,13 +49,13 @@ export function ResultCard({ attempt, reveal }: { attempt: Attempt; reveal: Reve
         <p className="text-5xl font-extrabold tabular-nums" data-testid="final-score">
           {attempt.score}
         </p>
-        <p className="label mt-1">points</p>
+        <p className="label mt-1">bodova</p>
         <p className="mt-3 text-sm text-muted" data-testid="result-summary">
           {solved
-            ? `Solved at zoom ${attempt.solvedStage} of ${STAGE_COUNT}${
-                attempt.wrongCount ? ` · ${attempt.wrongCount} wrong ${attempt.wrongCount === 1 ? "guess" : "guesses"} (−${attempt.wrongCount * WRONG_PENALTY})` : " · no wrong guesses"
+            ? `Riješeno na zoomu ${attempt.solvedStage} od ${STAGE_COUNT}${
+                attempt.wrongCount ? ` · krivih pokušaja: ${attempt.wrongCount} (−${attempt.wrongCount * WRONG_PENALTY})` : " · bez krivih pokušaja"
               }`
-            : "You gave up, so no points this time. Back tomorrow!"}
+            : "Odustao/la si, pa ovaj put nema bodova. Vidimo se sutra!"}
         </p>
       </div>
 
@@ -62,29 +63,29 @@ export function ResultCard({ attempt, reveal }: { attempt: Attempt; reveal: Reve
         <p className="mt-4 text-sm leading-relaxed text-ink/80">
           {reveal.fact}
           <span className="mt-2 flex flex-wrap items-center justify-center gap-1.5">
-            <Chip>{reveal.category}</Chip>
-            <Chip>{reveal.difficulty}</Chip>
+            <Chip>{categoryLabel(reveal.category)}</Chip>
+            <Chip>{difficultyLabel(reveal.difficulty)}</Chip>
           </span>
         </p>
       )}
 
       <div className="mt-5 flex flex-col gap-2 sm:flex-row">
         <Link href="/leaderboard" className="btn-primary flex-1" data-testid="view-leaderboard">
-          <Trophy size={18} aria-hidden /> View leaderboard
+          <Trophy size={18} aria-hidden /> Pogledaj ljestvicu
         </Link>
         <button className="btn-secondary flex-1" onClick={share} data-testid="share">
           {copied ? <Check size={18} aria-hidden /> : <Share2 size={18} aria-hidden />}
-          {copied ? "Copied" : "Share result"}
+          {copied ? "Kopirano" : "Podijeli rezultat"}
         </button>
       </div>
 
       <p className="mt-5 flex items-center justify-center gap-1.5 text-sm text-muted">
-        <Clock size={15} aria-hidden /> Next challenge in <Countdown className="font-semibold text-ink" />
+        <Clock size={15} aria-hidden /> Sljedeći izazov za <Countdown className="font-semibold text-ink" />
       </p>
 
       {reveal && (
         <p className="mt-4 text-[11px] leading-snug text-muted">
-          Photo: {reveal.credit.author || "Unknown"} · {reveal.credit.license} ·{" "}
+          Fotografija: {reveal.credit.author || "Nepoznat autor"} · {reveal.credit.license} ·{" "}
           <a className="underline underline-offset-2" href={reveal.credit.page} target="_blank" rel="noreferrer">
             Wikimedia Commons
           </a>

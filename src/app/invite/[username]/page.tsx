@@ -17,7 +17,7 @@ export default function InvitePage() {
     if (!ready || !repo || !profile || done.current) return;
     done.current = true;
     void repo.addFriend(decodeURIComponent(username), today).then((res) => {
-      setState(res.ok ? { ok: true, text: `You and ${res.value.username} are now friends.` } : { ok: false, text: res.error });
+      setState(res.ok ? { ok: true, text: `Ti i ${res.value.username} sada ste prijatelji.` } : { ok: false, text: res.error });
     });
   }, [ready, repo, profile, username, today]);
 
@@ -27,7 +27,7 @@ export default function InvitePage() {
   return (
     <Page>
       <div className="text-center">
-        <h1 className="text-3xl font-extrabold tracking-tight">Friend invite</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight">Poziv za prijateljstvo</h1>
         {state === null ? (
           <Loading />
         ) : (
@@ -36,8 +36,8 @@ export default function InvitePage() {
           </p>
         )}
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:justify-center">
-          <Link href="/play" className="btn-primary">Play today&apos;s challenge</Link>
-          <Link href="/leaderboard" className="btn-secondary">Friends leaderboard</Link>
+          <Link href="/play" className="btn-primary">Igraj današnji izazov</Link>
+          <Link href="/leaderboard" className="btn-secondary">Ljestvica prijatelja</Link>
         </div>
       </div>
     </Page>

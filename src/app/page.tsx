@@ -33,17 +33,17 @@ export default function HomePage() {
     <Page>
       <div className="text-center">
         <p className="label" data-testid="challenge-number">
-          Challenge No. {challenge?.number}
+          Izazov br. {challenge?.number}
         </p>
-        <h1 className="mt-2 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">Daily Zoom Challenge</h1>
-        <p className="mt-3 text-lg text-muted">Can you recognize what you&apos;re looking at?</p>
+        <h1 className="mt-2 text-4xl font-extrabold leading-tight tracking-tight sm:text-5xl">Dnevni zoom izazov</h1>
+        <p className="mt-3 text-lg text-muted">Prepoznaješ li što gledaš?</p>
 
         <Link href="/play" className="btn-primary btn-lg mt-7 w-full sm:w-auto" data-testid="play">
-          {finished ? "See today's result" : inProgress ? "Continue today's challenge" : "Play today's challenge"}
+          {finished ? "Pogledaj današnji rezultat" : inProgress ? "Nastavi današnji izazov" : "Igraj današnji izazov"}
         </Link>
         {finished && (
           <p className="mt-3 text-sm text-muted">
-            You scored <strong className="text-ink">{attempt.score}</strong> today. Come back tomorrow!
+            Danas si osvojio/la <strong className="text-ink">{attempt.score}</strong> bodova. Vrati se sutra!
           </p>
         )}
       </div>
@@ -51,21 +51,21 @@ export default function HomePage() {
       <div className="mt-8 grid grid-cols-2 gap-3 text-center">
         <div className="tile px-3 py-3">
           <p className="label flex items-center justify-center gap-1">
-            <Flame size={14} aria-hidden /> Streak
+            <Flame size={14} aria-hidden /> Niz
           </p>
           <p className="mt-1 text-3xl font-extrabold tabular-nums" data-testid="streak">
             {stats.currentStreak}
           </p>
-          <p className="text-xs text-muted">{stats.currentStreak === 1 ? "day" : "days"}</p>
+          <p className="text-xs text-muted">{stats.currentStreak % 10 === 1 && stats.currentStreak % 100 !== 11 ? "dan" : "dana"}</p>
         </div>
         <div className="tile px-3 py-3">
           <p className="label flex items-center justify-center gap-1">
-            <Star size={14} aria-hidden /> Total points
+            <Star size={14} aria-hidden /> Ukupno bodova
           </p>
           <p className="mt-1 text-3xl font-extrabold tabular-nums" data-testid="total-points">
-            {stats.totalPoints.toLocaleString()}
+            {stats.totalPoints.toLocaleString("hr-HR")}
           </p>
-          <p className="text-xs text-muted">all time</p>
+          <p className="text-xs text-muted">od početka</p>
         </div>
       </div>
 
@@ -74,7 +74,7 @@ export default function HomePage() {
       </div>
 
       <p className="mt-6 flex items-center justify-center gap-1.5 text-sm text-muted">
-        <Clock size={15} aria-hidden /> {finished ? "Next challenge in" : "New challenge in"} <Countdown className="font-semibold text-ink" />
+        <Clock size={15} aria-hidden /> {finished ? "Sljedeći izazov za" : "Novi izazov za"} <Countdown className="font-semibold text-ink" />
       </p>
     </Page>
   );

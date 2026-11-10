@@ -14,7 +14,7 @@ interface Props {
  * Shows the current crop of today's photograph. Every stage URL is a different
  * crop of the SAME master photo; only stages already revealed are ever requested.
  */
-export function ZoomImage({ stages, stage, celebrate = false, alt = "A zoomed-in photograph. What is it?" }: Props) {
+export function ZoomImage({ stages, stage, celebrate = false, alt = "Uvećana fotografija. Što je na njoj?" }: Props) {
   const [loaded, setLoaded] = useState<Record<number, boolean>>({});
   const prev = useRef(stage);
   const [animateStage, setAnimateStage] = useState<number | null>(null);

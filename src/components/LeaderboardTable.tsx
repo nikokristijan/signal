@@ -17,9 +17,9 @@ export function LeaderboardTable({ rows, friends = false, limit = 10 }: Props) {
     <div className="tile overflow-hidden" data-testid="leaderboard">
       <div className="flex items-center gap-3 border-b border-line bg-soft/60 px-4 py-2">
         <span className="label w-6">#</span>
-        <span className="label flex-1">Player</span>
-        {friends && <span className="label w-16 text-right">Today</span>}
-        <span className="label w-20 text-right">{friends ? "Total" : "Points"}</span>
+        <span className="label flex-1">Igrač</span>
+        {friends && <span className="label w-16 text-right">Danas</span>}
+        <span className="label w-20 text-right">{friends ? "Ukupno" : "Bodovi"}</span>
       </div>
       <ol>
         {top.map((r) => (
@@ -49,10 +49,10 @@ function Row({ r, friends }: { r: LeaderboardEntry; friends: boolean }) {
       <span className="flex min-w-0 flex-1 items-center gap-2.5">
         <Avatar username={r.username} avatar={r.avatar} size={30} />
         <span className="truncate font-medium">{r.username}</span>
-        {r.isMe && <span className="rounded-full bg-signal px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-white">You</span>}
+        {r.isMe && <span className="rounded-full bg-signal px-1.5 py-px text-[10px] font-bold uppercase tracking-wide text-white">Ti</span>}
       </span>
       {friends && <span className="w-16 text-right tabular-nums text-muted">{r.today === null || r.today === undefined ? "—" : r.today}</span>}
-      <span className="w-20 text-right font-bold tabular-nums">{r.points.toLocaleString()}</span>
+      <span className="w-20 text-right font-bold tabular-nums">{r.points.toLocaleString("hr-HR")}</span>
     </li>
   );
 }

@@ -12,7 +12,7 @@ export function Page({ children, challengeNumber, width = "max-w-xl" }: { childr
 
 export function Loading() {
   return (
-    <div className="grid place-items-center py-24" role="status" aria-label="Loading">
+    <div className="grid place-items-center py-24" role="status" aria-label="Učitavanje">
       <span className="h-6 w-6 animate-spin rounded-full border-2 border-line border-t-ink" />
     </div>
   );

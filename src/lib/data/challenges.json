@@ -1,20 +1,25 @@
 [
   {
     "slug": "eiffel-tower",
-    "subject": "Eiffel Tower",
-    "answer": "Eiffel Tower",
+    "subject": "Eiffelov toranj",
+    "answer": "Eiffelov toranj",
     "alternatives": [
-      "Tour Eiffel",
       "Eiffel",
+      "Ajfelov toranj",
+      "Eiffelov toranj Pariz",
+      "Eiffel Tower",
+      "Tour Eiffel",
       "Eiffel Tower Paris"
     ],
     "nudges": [
+      "toranj",
+      "pariški toranj",
       "tower",
       "paris tower"
     ],
     "category": "Landmark",
     "difficulty": "easy",
-    "fact": "Completed in 1889, it was the tallest structure in the world for 41 years.",
+    "fact": "Dovršen 1889., bio je najviša građevina na svijetu punih 41 godinu.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -34,19 +39,22 @@
   },
   {
     "slug": "pineapple",
-    "subject": "Pineapple",
-    "answer": "Pineapple",
+    "subject": "Ananas",
+    "answer": "Ananas",
     "alternatives": [
-      "Pineapples",
-      "Ananas"
+      "Ananasi",
+      "Pineapple",
+      "Pineapples"
     ],
     "nudges": [
+      "voće",
+      "tropsko voće",
       "fruit",
       "tropical fruit"
     ],
     "category": "Food",
     "difficulty": "easy",
-    "fact": "A pineapple is not a single fruit but a cluster of many fused fruitlets.",
+    "fact": "Ananas nije jedan plod, nego skup mnogo sraslih plodića.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -69,17 +77,21 @@
     "subject": "Zebra",
     "answer": "Zebra",
     "alternatives": [
+      "Zebre",
+      "Stepska zebra",
       "Zebras",
       "Plains Zebra",
       "Burchell's Zebra"
     ],
     "nudges": [
+      "konj",
+      "prugasti konj",
       "horse",
       "striped horse"
     ],
     "category": "Animal",
     "difficulty": "easy",
-    "fact": "No two zebras have exactly the same stripe pattern.",
+    "fact": "Ne postoje dvije zebre s potpuno istim uzorkom pruga.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -99,9 +111,16 @@
   },
   {
     "slug": "cassette-tape",
-    "subject": "Cassette tape",
-    "answer": "Cassette Tape",
+    "subject": "Kazeta",
+    "answer": "Kazeta",
     "alternatives": [
+      "Audio kazeta",
+      "Kaseta",
+      "Magnetofonska vrpca",
+      "Vrpca",
+      "Traka",
+      "Kolut trake",
+      "Cassette Tape",
       "Cassette",
       "Compact Cassette",
       "Audio Cassette",
@@ -110,11 +129,13 @@
       "Tape"
     ],
     "nudges": [
+      "kasetofon",
+      "magnetofon",
       "tape recorder"
     ],
     "category": "Technology",
     "difficulty": "medium",
-    "fact": "Philips introduced the compact cassette in 1963.",
+    "fact": "Philips je kompaktnu kazetu predstavio 1963.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -137,16 +158,21 @@
     "subject": "Taj Mahal",
     "answer": "Taj Mahal",
     "alternatives": [
+      "Tadž Mahal",
+      "Tadz Mahal",
       "Taj"
     ],
     "nudges": [
+      "mauzolej",
+      "palača",
+      "džamija",
       "mausoleum",
       "palace",
       "mosque"
     ],
     "category": "Famous building",
     "difficulty": "easy",
-    "fact": "Built in Agra by Shah Jahan as a mausoleum for his wife Mumtaz Mahal, completed around 1653.",
+    "fact": "Sagradio ga je Šah Džahan u Agri kao mauzolej za suprugu Mumtaz Mahal, dovršen oko 1653.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -166,9 +192,13 @@
   },
   {
     "slug": "vw-beetle",
-    "subject": "Volkswagen Beetle",
-    "answer": "Volkswagen Beetle",
+    "subject": "Volkswagen Buba",
+    "answer": "Volkswagen Buba",
     "alternatives": [
+      "VW Buba",
+      "Buba",
+      "Volkswagen Tip 1",
+      "Volkswagen Beetle",
       "VW Beetle",
       "Beetle",
       "VW Bug",
@@ -179,6 +209,10 @@
     "nudges": [
       "volkswagen",
       "vw",
+      "auto",
+      "automobil",
+      "stari auto",
+      "oldtimer",
       "car",
       "old car",
       "classic car",
@@ -186,7 +220,7 @@
     ],
     "category": "Car",
     "difficulty": "medium",
-    "fact": "More than 21 million were built between 1938 and 2003.",
+    "fact": "Između 1938. i 2003. proizvedeno je više od 21 milijun primjeraka.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -206,9 +240,13 @@
   },
   {
     "slug": "ladybug",
-    "subject": "Ladybug",
-    "answer": "Ladybug",
+    "subject": "Bubamara",
+    "answer": "Bubamara",
     "alternatives": [
+      "Bubamare",
+      "Božja ovčica",
+      "Bozja ovcica",
+      "Ladybug",
       "Ladybird",
       "Lady Bird",
       "Lady Beetle",
@@ -216,13 +254,16 @@
       "Ladybugs"
     ],
     "nudges": [
+      "buba",
+      "kukac",
+      "kornjaš",
       "beetle",
       "bug",
       "insect"
     ],
     "category": "Animal",
     "difficulty": "easy",
-    "fact": "Their bright colours warn predators that they taste bad.",
+    "fact": "Njihove jarke boje upozoravaju grabežljivce da su neukusne.",
     "focus": {
       "x": 0.57,
       "y": 0.47
@@ -242,9 +283,14 @@
   },
   {
     "slug": "rubiks-cube",
-    "subject": "Rubik's Cube",
-    "answer": "Rubik's Cube",
+    "subject": "Rubikova kocka",
+    "answer": "Rubikova kocka",
     "alternatives": [
+      "Rubikova kockica",
+      "Rubik kocka",
+      "Rubikova",
+      "Mađarska kocka",
+      "Rubik's Cube",
       "Rubiks Cube",
       "Rubix Cube",
       "Rubik Cube",
@@ -254,13 +300,16 @@
       "Twisty Puzzle"
     ],
     "nudges": [
+      "kocka",
+      "kockica",
+      "slagalica",
       "cube",
       "puzzle cube",
       "puzzle"
     ],
     "category": "Everyday item",
     "difficulty": "easy",
-    "fact": "Invented in 1974 by Ernő Rubik, it has about 43 quintillion possible configurations.",
+    "fact": "Izumio ju je Ernő Rubik 1974., a ima oko 43 trilijuna mogućih kombinacija.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -280,20 +329,26 @@
   },
   {
     "slug": "golden-gate-bridge",
-    "subject": "Golden Gate Bridge",
-    "answer": "Golden Gate Bridge",
+    "subject": "Golden Gate",
+    "answer": "Most Golden Gate",
     "alternatives": [
       "Golden Gate",
+      "Golden Gate most",
+      "Zlatna vrata",
+      "Golden Gate Bridge",
       "Golden Gate Bridge San Francisco"
     ],
     "nudges": [
+      "most u san franciscu",
+      "viseći most",
+      "most",
       "san francisco bridge",
       "suspension bridge",
       "bridge"
     ],
     "category": "Landmark",
     "difficulty": "easy",
-    "fact": "Opened in 1937 and painted in a colour called International Orange.",
+    "fact": "Otvoren 1937., obojen je bojom koja se zove „međunarodna narančasta”.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -313,21 +368,28 @@
   },
   {
     "slug": "croissant",
-    "subject": "Croissant",
-    "answer": "Croissant",
+    "subject": "Kroasan",
+    "answer": "Kroasan",
     "alternatives": [
+      "Kroasani",
+      "Kroason",
+      "Croissant",
       "Croissants",
       "Butter Croissant",
       "Croissant Pastry"
     ],
     "nudges": [
+      "peciva",
+      "pecivo",
+      "kruh",
+      "kifla",
       "pastry",
       "bread",
       "roll"
     ],
     "category": "Food",
     "difficulty": "easy",
-    "fact": "Despite its French fame, the croissant descends from the Austrian kipferl.",
+    "fact": "Iako je slavan kao francuski, kroasan potječe od austrijskog kipferla.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -347,19 +409,24 @@
   },
   {
     "slug": "penguin",
-    "subject": "Penguin",
-    "answer": "Penguin",
+    "subject": "Pingvin",
+    "answer": "Pingvin",
     "alternatives": [
+      "Pingvini",
+      "Carski pingvin",
+      "Kraljevski pingvin",
+      "Penguin",
       "Penguins",
       "Emperor Penguin",
       "King Penguin"
     ],
     "nudges": [
+      "ptica",
       "bird"
     ],
     "category": "Animal",
     "difficulty": "easy",
-    "fact": "Penguins can't fly, but they are superb swimmers.",
+    "fact": "Pingvini ne mogu letjeti, ali su izvrsni plivači.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -379,9 +446,13 @@
   },
   {
     "slug": "typewriter",
-    "subject": "Typewriter",
-    "answer": "Typewriter",
+    "subject": "Pisaći stroj",
+    "answer": "Pisaći stroj",
     "alternatives": [
+      "Pisaca masina",
+      "Pisaća mašina",
+      "Stari pisaći stroj",
+      "Typewriter",
       "Type Writer",
       "Vintage Typewriter",
       "Manual Typewriter",
@@ -389,12 +460,14 @@
       "Antique Typewriter"
     ],
     "nudges": [
+      "tipkovnica",
+      "stara tipkovnica",
       "keyboard",
       "old keyboard"
     ],
     "category": "Historical object",
     "difficulty": "medium",
-    "fact": "The QWERTY keyboard layout was designed for typewriters in the 1870s.",
+    "fact": "QWERTY raspored tipki osmišljen je za pisaće strojeve 1870-ih.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -417,19 +490,23 @@
     "subject": "Big Ben",
     "answer": "Big Ben",
     "alternatives": [
+      "Elizabetin toranj",
+      "Big Ben London",
       "Elizabeth Tower",
       "Westminster Clock Tower",
-      "Big Ben London",
       "Houses of Parliament Clock Tower"
     ],
     "nudges": [
+      "toranj sa satom",
+      "londonski toranj",
+      "sat",
       "clock tower",
       "london clock tower",
       "clock"
     ],
     "category": "Famous building",
     "difficulty": "easy",
-    "fact": "Big Ben is technically the bell; the tower is called Elizabeth Tower.",
+    "fact": "Big Ben je zapravo ime zvona; sam toranj zove se Elizabetin toranj.",
     "focus": {
       "x": 0.38,
       "y": 0.35
@@ -449,19 +526,23 @@
   },
   {
     "slug": "sunflower",
-    "subject": "Sunflower",
-    "answer": "Sunflower",
+    "subject": "Suncokret",
+    "answer": "Suncokret",
     "alternatives": [
+      "Suncokreti",
+      "Sunflower",
       "Sunflowers",
       "Helianthus"
     ],
     "nudges": [
+      "cvijet",
+      "žuti cvijet",
       "flower",
       "yellow flower"
     ],
     "category": "Nature",
     "difficulty": "easy",
-    "fact": "Young sunflowers follow the sun across the sky.",
+    "fact": "Mladi suncokreti prate Sunce preko neba.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -481,20 +562,27 @@
   },
   {
     "slug": "school-bus",
-    "subject": "School bus",
-    "answer": "School Bus",
+    "subject": "Školski autobus",
+    "answer": "Školski autobus",
     "alternatives": [
+      "Žuti školski autobus",
+      "Skolski bus",
+      "Školski bus",
+      "Američki školski autobus",
+      "School Bus",
       "Yellow School Bus",
       "Schoolbus",
       "American School Bus"
     ],
     "nudges": [
+      "autobus",
       "bus",
+      "žuti autobus",
       "yellow bus"
     ],
     "category": "Car",
     "difficulty": "easy",
-    "fact": "School buses are painted a special yellow chosen in 1939 for its visibility.",
+    "fact": "Školski autobusi obojeni su posebnom žutom bojom odabranom 1939. zbog vidljivosti.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -514,9 +602,12 @@
   },
   {
     "slug": "hourglass",
-    "subject": "Hourglass",
-    "answer": "Hourglass",
+    "subject": "Pješčani sat",
+    "answer": "Pješčani sat",
     "alternatives": [
+      "Pjescani sat",
+      "Peščani sat",
+      "Hourglass",
       "Sand Timer",
       "Sandglass",
       "Sand Glass",
@@ -524,13 +615,17 @@
       "Egg Timer"
     ],
     "nudges": [
+      "sat",
+      "pijesak",
+      "staklo",
+      "tajmer",
       "timer",
       "sand",
       "glass"
     ],
     "category": "Everyday item",
     "difficulty": "medium",
-    "fact": "Hourglasses were used for centuries aboard ships to measure time.",
+    "fact": "Pješčani satovi stoljećima su se koristili na brodovima za mjerenje vremena.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -550,25 +645,33 @@
   },
   {
     "slug": "pyramids",
-    "subject": "Pyramids of Giza",
-    "answer": "Pyramids of Giza",
+    "subject": "Piramide u Gizi",
+    "answer": "Piramide u Gizi",
     "alternatives": [
+      "Piramide",
+      "Piramida",
+      "Keopsova piramida",
+      "Velika piramida",
+      "Egipatske piramide",
+      "Giza",
+      "Pyramids of Giza",
       "Pyramids",
       "Pyramid",
       "Giza Pyramids",
       "Great Pyramid",
       "Great Pyramid of Giza",
       "Pyramid of Giza",
-      "Egyptian Pyramids",
-      "Giza"
+      "Egyptian Pyramids"
     ],
     "nudges": [
+      "egipat",
+      "grobnica",
       "egypt",
       "tomb"
     ],
     "category": "Landmark",
     "difficulty": "easy",
-    "fact": "The Great Pyramid, built around 2560 BC, was the tallest man-made structure for almost 4,000 years.",
+    "fact": "Velika piramida, izgrađena oko 2560. pr. Kr., bila je najviša građevina gotovo 4000 godina.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -588,9 +691,14 @@
   },
   {
     "slug": "peacock",
-    "subject": "Peacock",
-    "answer": "Peacock",
+    "subject": "Paun",
+    "answer": "Paun",
     "alternatives": [
+      "Pauni",
+      "Paunovo pero",
+      "Paunova pera",
+      "Indijski paun",
+      "Peacock",
       "Peafowl",
       "Peacocks",
       "Peacock Feather",
@@ -598,11 +706,12 @@
       "Peacock Feathers"
     ],
     "nudges": [
+      "ptica",
       "bird"
     ],
     "category": "Animal",
     "difficulty": "medium",
-    "fact": "Only males grow the iridescent train; the 'eyes' on each feather are used in courtship.",
+    "fact": "Samo mužjaci imaju prelijevajući rep; „oči” na perju služe za udvaranje.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -622,9 +731,16 @@
   },
   {
     "slug": "rotary-phone",
-    "subject": "Rotary phone",
-    "answer": "Rotary Phone",
+    "subject": "Telefon s brojčanikom",
+    "answer": "Telefon s brojčanikom",
     "alternatives": [
+      "Stari telefon",
+      "Telefon",
+      "Fiksni telefon s brojčanikom",
+      "Retro telefon",
+      "Telefon na okretanje",
+      "Brojčanik",
+      "Rotary Phone",
       "Rotary Telephone",
       "Rotary Dial Phone",
       "Dial Phone",
@@ -636,12 +752,14 @@
       "Telephone"
     ],
     "nudges": [
+      "mobitel",
+      "fiksni telefon",
       "phone",
       "landline"
     ],
     "category": "Technology",
     "difficulty": "medium",
-    "fact": "Rotary dials dominated telephones for much of the 20th century.",
+    "fact": "Brojčanici su dominirali telefonima većinu 20. stoljeća.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -661,18 +779,23 @@
   },
   {
     "slug": "giraffe",
-    "subject": "Giraffe",
-    "answer": "Giraffe",
+    "subject": "Žirafa",
+    "answer": "Žirafa",
     "alternatives": [
+      "Žirafe",
+      "Zirafa",
+      "Giraffe",
       "Giraffes"
     ],
     "nudges": [
+      "životinja",
+      "dugi vrat",
       "animal",
       "long neck"
     ],
     "category": "Animal",
     "difficulty": "easy",
-    "fact": "Each giraffe's coat pattern is unique, and giraffes are the tallest land animals.",
+    "fact": "Svaka žirafa ima jedinstven uzorak krzna, a žirafe su najviše kopnene životinje.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -692,20 +815,25 @@
   },
   {
     "slug": "sydney-opera-house",
-    "subject": "Sydney Opera House",
-    "answer": "Sydney Opera House",
+    "subject": "Opera u Sydneyu",
+    "answer": "Opera u Sydneyu",
     "alternatives": [
-      "Opera House",
+      "Sidnejska opera",
+      "Opera Sydney",
       "Sydney Opera",
+      "Opera u Sidneju",
+      "Sydney Opera House",
+      "Opera House",
       "The Opera House"
     ],
     "nudges": [
       "opera",
-      "sydney"
+      "sydney",
+      "kazalište"
     ],
     "category": "Famous building",
     "difficulty": "easy",
-    "fact": "Designed by Jørn Utzon and opened in 1973; its roof is covered in over a million tiles.",
+    "fact": "Projektirao ju je Jørn Utzon, otvorena je 1973., a krov joj prekriva više od milijun pločica.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -725,10 +853,15 @@
   },
   {
     "slug": "polaroid-camera",
-    "subject": "Polaroid camera",
-    "answer": "Polaroid Camera",
+    "subject": "Polaroid fotoaparat",
+    "answer": "Polaroid fotoaparat",
     "alternatives": [
       "Polaroid",
+      "Instant fotoaparat",
+      "Polaroid kamera",
+      "Stari fotoaparat",
+      "Retro fotoaparat",
+      "Polaroid Camera",
       "Instant Camera",
       "Instant Film Camera",
       "Retro Camera",
@@ -736,11 +869,13 @@
       "Old Camera"
     ],
     "nudges": [
+      "fotoaparat",
+      "kamera",
       "camera"
     ],
     "category": "Technology",
     "difficulty": "medium",
-    "fact": "The first Polaroid instant camera went on sale in 1948.",
+    "fact": "Prvi Polaroid instant fotoaparat pušten je u prodaju 1948.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -763,20 +898,25 @@
     "subject": "Sushi",
     "answer": "Sushi",
     "alternatives": [
-      "Sushi Roll",
-      "Sushi Rolls",
+      "Suši",
       "Maki",
       "Nigiri",
+      "Sushi rolice",
+      "Sushi Roll",
+      "Sushi Rolls",
       "Sushi Platter"
     ],
     "nudges": [
+      "riža",
+      "japanska hrana",
+      "riba",
       "rice",
       "japanese food",
       "fish"
     ],
     "category": "Food",
     "difficulty": "easy",
-    "fact": "The word sushi refers to the vinegared rice, not the raw fish.",
+    "fact": "Riječ sushi odnosi se na rižu s octom, a ne na sirovu ribu.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -796,21 +936,25 @@
   },
   {
     "slug": "cactus",
-    "subject": "Cactus",
-    "answer": "Cactus",
+    "subject": "Kaktus",
+    "answer": "Kaktus",
     "alternatives": [
-      "Cacti",
+      "Kaktusi",
       "Saguaro",
+      "Cactus",
+      "Cacti",
       "Saguaro Cactus",
       "Prickly Cactus"
     ],
     "nudges": [
+      "biljka",
+      "pustinjska biljka",
       "plant",
       "desert plant"
     ],
     "category": "Nature",
     "difficulty": "easy",
-    "fact": "A saguaro cactus can live for well over 100 years.",
+    "fact": "Kaktus saguaro može živjeti i više od 100 godina.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -830,22 +974,29 @@
   },
   {
     "slug": "leaning-tower-of-pisa",
-    "subject": "Leaning Tower of Pisa",
-    "answer": "Leaning Tower of Pisa",
+    "subject": "Kosi toranj u Pisi",
+    "answer": "Kosi toranj u Pisi",
     "alternatives": [
+      "Krivi toranj u Pisi",
+      "Toranj u Pisi",
+      "Kosi toranj",
+      "Krivi toranj",
+      "Pisa",
+      "Leaning Tower of Pisa",
       "Tower of Pisa",
       "Pisa Tower",
-      "Pisa",
       "Torre di Pisa",
       "Leaning Tower"
     ],
     "nudges": [
+      "toranj",
+      "talijanski toranj",
       "tower",
       "italy tower"
     ],
     "category": "Famous building",
     "difficulty": "easy",
-    "fact": "The tower began to lean during construction in the 12th century because of soft ground.",
+    "fact": "Toranj se počeo naginjati već tijekom gradnje u 12. stoljeću zbog mekanog tla.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -865,9 +1016,14 @@
   },
   {
     "slug": "light-bulb",
-    "subject": "Light bulb",
-    "answer": "Light Bulb",
+    "subject": "Žarulja",
+    "answer": "Žarulja",
     "alternatives": [
+      "Zarulja",
+      "Sijalica",
+      "Edisonova žarulja",
+      "Obična žarulja",
+      "Light Bulb",
       "Lightbulb",
       "Bulb",
       "Incandescent Bulb",
@@ -875,12 +1031,14 @@
       "Incandescent Light Bulb"
     ],
     "nudges": [
+      "lampa",
+      "svjetlo",
       "lamp",
       "light"
     ],
     "category": "Technology",
     "difficulty": "medium",
-    "fact": "Practical incandescent bulbs were developed around 1879 by Thomas Edison and Joseph Swan.",
+    "fact": "Praktične žarulje razvili su oko 1879. Thomas Edison i Joseph Swan.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -900,23 +1058,29 @@
   },
   {
     "slug": "mount-fuji",
-    "subject": "Mount Fuji",
-    "answer": "Mount Fuji",
+    "subject": "Fuji",
+    "answer": "Planina Fuji",
     "alternatives": [
-      "Mt Fuji",
       "Fuji",
+      "Fudži",
       "Fujisan",
+      "Vulkan Fuji",
+      "Mount Fuji",
+      "Mt Fuji",
       "Fuji San",
       "Mt. Fuji"
     ],
     "nudges": [
+      "vulkan",
+      "planina",
+      "japanska planina",
       "volcano",
       "mountain",
       "japan mountain"
     ],
     "category": "Nature",
     "difficulty": "easy",
-    "fact": "At 3,776 m, it is the tallest mountain in Japan.",
+    "fact": "S 3776 m najviša je planina u Japanu.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -936,19 +1100,24 @@
   },
   {
     "slug": "umbrella",
-    "subject": "Umbrella",
-    "answer": "Umbrella",
+    "subject": "Kišobran",
+    "answer": "Kišobran",
     "alternatives": [
+      "Kisobran",
+      "Kišobrani",
+      "Suncobran",
+      "Umbrella",
       "Umbrellas",
       "Brolly",
       "Parasol"
     ],
     "nudges": [
+      "kiša",
       "rain"
     ],
     "category": "Everyday item",
     "difficulty": "medium",
-    "fact": "Umbrellas have been used for shade for more than 3,000 years.",
+    "fact": "Kišobrani se za zaštitu od sunca koriste više od 3000 godina.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -968,9 +1137,14 @@
   },
   {
     "slug": "colosseum",
-    "subject": "Colosseum",
-    "answer": "Colosseum",
+    "subject": "Koloseum",
+    "answer": "Koloseum",
     "alternatives": [
+      "Kolosej",
+      "Kolizej",
+      "Rimski Koloseum",
+      "Flavijev amfiteatar",
+      "Colosseum",
       "Coliseum",
       "Roman Colosseum",
       "Roman Coliseum",
@@ -978,14 +1152,16 @@
       "The Colosseum"
     ],
     "nudges": [
+      "amfiteatar",
+      "rim",
+      "arena",
       "amphitheatre",
       "amphitheater",
-      "rome",
-      "arena"
+      "rome"
     ],
     "category": "Famous building",
     "difficulty": "easy",
-    "fact": "Opened in 80 AD, it could hold an estimated 50,000 spectators.",
+    "fact": "Otvoren 80. godine, mogao je primiti oko 50.000 gledatelja.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -1005,9 +1181,14 @@
   },
   {
     "slug": "hot-air-balloon",
-    "subject": "Hot air balloon",
-    "answer": "Hot Air Balloon",
+    "subject": "Balon na vrući zrak",
+    "answer": "Balon na vrući zrak",
     "alternatives": [
+      "Balon",
+      "Zračni balon",
+      "Baloni na vrući zrak",
+      "Balon na topli zrak",
+      "Hot Air Balloon",
       "Hot Air Balloons",
       "Balloon",
       "Air Balloon"
@@ -1015,7 +1196,7 @@
     "nudges": [],
     "category": "Object",
     "difficulty": "easy",
-    "fact": "The first crewed hot air balloon flight took place in Paris in 1783.",
+    "fact": "Prvi let balona na vrući zrak s ljudima održan je u Parizu 1783.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -1038,17 +1219,20 @@
     "subject": "Pizza",
     "answer": "Pizza",
     "alternatives": [
+      "Pica",
+      "Margherita",
+      "Kriška pizze",
       "Pepperoni Pizza",
       "Pizza Pie",
-      "Pizza Slice",
-      "Margherita"
+      "Pizza Slice"
     ],
     "nudges": [
+      "talijanska hrana",
       "italian food"
     ],
     "category": "Food",
     "difficulty": "easy",
-    "fact": "Modern pizza was born in Naples; pepperoni, however, is an American invention.",
+    "fact": "Moderna pizza rođena je u Napulju; feferoni salama (pepperoni) je pak američki izum.",
     "focus": {
       "x": 0.5,
       "y": 0.5
@@ -1068,9 +1252,14 @@
   },
   {
     "slug": "ships-wheel",
-    "subject": "Ship's wheel",
-    "answer": "Ship's Wheel",
+    "subject": "Brodsko kormilo",
+    "answer": "Brodsko kormilo",
     "alternatives": [
+      "Kormilo",
+      "Kormilo broda",
+      "Kotač kormila",
+      "Timun",
+      "Ship's Wheel",
       "Ships Wheel",
       "Ship Wheel",
       "Helm",
@@ -1079,12 +1268,14 @@
       "Ships Helm"
     ],
     "nudges": [
+      "kotač",
+      "volan",
       "wheel",
       "steering wheel"
     ],
     "category": "Historical object",
     "difficulty": "medium",
-    "fact": "Ship's wheels replaced tillers on large sailing ships in the early 1700s.",
+    "fact": "Kotač kormila zamijenio je rudo na velikim jedrenjacima početkom 18. stoljeća.",
     "focus": {
       "x": 0.5,
       "y": 0.5

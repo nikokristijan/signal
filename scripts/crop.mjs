@@ -2,7 +2,7 @@
 // Everything is expressed as fractions (0..1) of the 4:3 master frame, so the
 // maths is independent of the photo's pixel size.
 
-export const DEFAULT_ZOOMS = [7, 4, 2.4, 1.5, 1];
+export const DEFAULT_ZOOMS = [21, 7, 4, 2.4, 1];
 
 /**
  * Returns one rect {x, y, w, h} per stage (fractions of the master frame).

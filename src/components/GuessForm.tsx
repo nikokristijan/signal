@@ -39,12 +39,12 @@ export function GuessForm({ attempt, onGuess, onReveal, onGiveUp }: Props) {
       if (!outcome) return;
       const key = Date.now();
       if (outcome.verdict === "wrong") {
-        setFeedback({ kind: "wrong", text: `Not quite. −${outcome.penalty} points`, key });
+        setFeedback({ kind: "wrong", text: `Nije to. −${outcome.penalty} bodova`, key });
         setValue("");
       } else if (outcome.verdict === "close") {
-        setFeedback({ kind: "close", text: "Close, but be more specific. No points lost.", key });
+        setFeedback({ kind: "close", text: "Blizu, ali budi precizniji. Bodovi nisu izgubljeni.", key });
       } else if (outcome.verdict === "duplicate") {
-        setFeedback({ kind: "duplicate", text: "You already tried that. No points lost.", key });
+        setFeedback({ kind: "duplicate", text: "To si već probao. Bodovi nisu izgubljeni.", key });
       } else {
         setFeedback(null);
       }
@@ -63,7 +63,7 @@ export function GuessForm({ attempt, onGuess, onReveal, onGiveUp }: Props) {
   return (
     <section aria-labelledby="question" className="mt-5">
       <h2 id="question" className="text-center text-xl font-bold">
-        What am I looking at?
+        Što je na slici?
       </h2>
 
       <form onSubmit={submit} className="mt-3 flex gap-2" autoComplete="off">
@@ -71,9 +71,9 @@ export function GuessForm({ attempt, onGuess, onReveal, onGiveUp }: Props) {
           ref={inputRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          aria-label="Your answer"
+          aria-label="Tvoj odgovor"
           aria-describedby="feedback"
-          placeholder="Type your answer…"
+          placeholder="Upiši odgovor…"
           enterKeyHint="send"
           autoCapitalize="none"
           autoCorrect="off"
@@ -82,7 +82,7 @@ export function GuessForm({ attempt, onGuess, onReveal, onGiveUp }: Props) {
           className="min-w-0 flex-1 rounded-full border border-line bg-white px-5 py-3 text-base outline-none placeholder:text-muted/70 focus:border-ink"
         />
         <button type="submit" className="btn-primary shrink-0" disabled={!value.trim() || busy} data-testid="submit">
-          <Send size={16} aria-hidden /> Submit
+          <Send size={16} aria-hidden /> Pošalji
         </button>
       </form>
 
@@ -103,7 +103,7 @@ export function GuessForm({ attempt, onGuess, onReveal, onGiveUp }: Props) {
 
       {wrongGuesses.length > 0 && (
         <p className="mt-1 text-sm text-muted" data-testid="wrong-guesses">
-          Tried:{" "}
+          Pokušano:{" "}
           {wrongGuesses.map((g, i) => (
             <span key={g.text + i}>
               {i > 0 && " · "}
@@ -115,40 +115,40 @@ export function GuessForm({ attempt, onGuess, onReveal, onGiveUp }: Props) {
 
       <button type="button" onClick={reveal} disabled={lastStage || busy} className="btn-secondary mt-4 w-full" data-testid="reveal">
         <ChevronsRight size={18} aria-hidden />
-        {lastStage ? "Final zoom reached" : `Reveal next zoom · worth ${stagePoints(attempt.stage + 1)} pts`}
+        {lastStage ? "Ovo je zadnja razina" : `Otkrij sljedeći zoom · vrijedi ${stagePoints(attempt.stage + 1)} bod.`}
       </button>
 
       <dl className="mt-4 grid grid-cols-2 divide-x divide-line rounded-lg border border-line bg-white text-center">
         <div className="px-3 py-2.5">
-          <dt className="label">Possible points</dt>
+          <dt className="label">Mogući bodovi</dt>
           <dd className="mt-0.5 text-xl font-bold tabular-nums" data-testid="possible-points">
             {possible}
           </dd>
         </div>
         <div className="px-3 py-2.5">
-          <dt className="label">Remaining score</dt>
+          <dt className="label">Preostali bodovi</dt>
           <dd className="mt-0.5 text-xl font-bold tabular-nums text-signal-dark" data-testid="remaining-score">
             {remaining}
           </dd>
         </div>
       </dl>
-      <p className="mt-2 text-center text-xs text-muted">Each wrong answer costs {WRONG_PENALTY} points.</p>
+      <p className="mt-2 text-center text-xs text-muted">Svaki krivi odgovor košta {WRONG_PENALTY} bodova.</p>
 
       <div className="mt-3 text-center">
         {confirmGiveUp ? (
           <span className="text-sm">
-            Reveal the answer and score 0?{" "}
+            Otkriti odgovor uz 0 bodova?{" "}
             <button className="font-semibold text-miss underline underline-offset-2" onClick={() => void onGiveUp()} data-testid="give-up-confirm">
-              Yes, give up
+              Da, odustajem
             </button>{" "}
             ·{" "}
             <button className="font-semibold underline underline-offset-2" onClick={() => setConfirmGiveUp(false)}>
-              Keep playing
+              Igram dalje
             </button>
           </span>
         ) : (
           <button className="text-sm text-muted underline underline-offset-2 hover:text-ink" onClick={() => setConfirmGiveUp(true)} data-testid="give-up">
-            Give up
+            Odustani
           </button>
         )}
       </div>

@@ -3,6 +3,7 @@ import type { Verdict } from "./types";
 /** Lowercase, strip accents/punctuation, drop leading articles, light plural stemming. */
 export function normalize(input: string): string {
   const base = input
+    .replace(/[đĐ]/g, "d")
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()

@@ -4,15 +4,15 @@ import { GameProvider } from "@/components/GameProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "SIGNAL — Daily Zoom Challenge",
-  description: "Can you recognize what you're looking at? One photograph, five zoom levels, a new puzzle every day.",
+  title: "SIGNAL — dnevni zoom izazov",
+  description: "Prepoznaješ li što gledaš? Jedna fotografija, pet razina zooma, nova zagonetka svaki dan.",
 };
 
 export const viewport: Viewport = { width: "device-width", initialScale: 1, themeColor: "#faf8f4" };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="hr">
       <body>
         <GameProvider>{children}</GameProvider>
       </body>

@@ -22,7 +22,7 @@ export function Countdown({ className = "" }: { className?: string }) {
   }, [rollover]);
 
   return (
-    <span className={`tabular-nums ${className}`} aria-label="Time until the next challenge">
+    <span className={`tabular-nums ${className}`} aria-label="Vrijeme do sljedećeg izazova">
       {ms === null ? "--:--:--" : formatCountdown(ms)}
     </span>
   );

@@ -45,5 +45,5 @@ export function formatCountdown(ms: number): string {
 }
 
 export function formatLongDate(key: string): string {
-  return parseDateKey(key).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  return parseDateKey(key).toLocaleDateString("hr-HR", { weekday: "short", month: "short", day: "numeric" });
 }
