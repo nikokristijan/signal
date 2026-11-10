@@ -45,10 +45,14 @@ The override is disabled in production builds.
 
 ## Switching to Supabase
 
-1. Create a Supabase project and run `supabase/migrations/0001_init.sql` in the SQL editor.
+1. Create a Supabase project and run `supabase/migrations/0001_init.sql` and
+   `supabase/migrations/0002_storage.sql` in the SQL editor.
 2. Generate and run the challenge seed: `node scripts/generate-seed.mjs > supabase/seed.sql`.
-3. Copy `.env.example` → `.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL` /
-   `NEXT_PUBLIC_SUPABASE_ANON_KEY`. In Auth settings enable email sign-in and add your site URL.
+3. Upload the stage images to the private bucket:
+   `SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… node scripts/upload-stages.mjs`.
+4. Copy `.env.example` → `.env.local` and fill in `NEXT_PUBLIC_SUPABASE_URL`,
+   `NEXT_PUBLIC_SUPABASE_ANON_KEY` and the server-only `SUPABASE_SERVICE_ROLE_KEY`.
+   In Auth settings enable email sign-in and add your site URL.
 
 The UI never talks to Supabase directly. It uses the `GameRepository` interface
 (`src/lib/repo/types.ts`) which has two implementations: `LocalRepository` and `SupabaseRepository`.
@@ -92,9 +96,12 @@ credit), run `npm run photos`, then `npm run photos:sheet` and *look at the five
 stage 1 should be hard but fair, stage 4 recognizable. `npm test` also checks that no answer (even
 with typo tolerance) matches a different challenge.
 
-> The stage images are static files, so a determined player could guess the stage-5 URL. For a
-> production launch serve stages from a private Supabase Storage bucket with short-lived signed URLs
-> issued per revealed stage.
+**Images in Supabase mode are private.** The stage files live in a private bucket under opaque
+paths (`sig-020/stage-3.webp`, never the subject name). The browser requests
+`/api/stage?challenge=sig-020&stage=3`; that route checks the signed-in player's attempt and only
+redirects to a 60-second signed URL for stages already revealed (or any stage once finished), so
+the full photo can't be fetched early. In local demo mode the same images are plain static files in
+`public/challenges/` — fine for a demo, but not spoiler-proof.
 
 ## Project layout
 

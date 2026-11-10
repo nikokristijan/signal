@@ -21,6 +21,9 @@ import type { GameRepository } from "./types";
 
 const USERNAME_RE = /^[a-z0-9_]{3,16}$/;
 
+/** Stage images are never linked directly: /api/stage signs a short-lived URL, only for revealed stages. */
+const stageUrl = (challengeId: string, stage: number) => `/api/stage?challenge=${encodeURIComponent(challengeId)}&stage=${stage}`;
+
 /** Maps a daily_attempts row (snake_case, from the database) to the Attempt the UI uses. */
 function toAttempt(row: any, number: number, date: string): Attempt {
   return {
@@ -105,7 +108,7 @@ export class SupabaseRepository implements GameRepository {
     const row = rows?.[0];
     if (!row) throw new Error("No challenge published for this date.");
     this.meta.set(row.id, { number: row.number, date: row.publish_date });
-    return { id: row.id, number: row.number, date: row.publish_date, stages: row.stage_images };
+    return { id: row.id, number: row.number, date: row.publish_date, stages: [1, 2, 3, 4, 5].map((n) => stageUrl(row.id, n)) };
   }
 
   private attemptFrom(row: any): Attempt {
@@ -154,7 +157,7 @@ export class SupabaseRepository implements GameRepository {
       ...toAttempt(r, r.number, r.publish_date),
       subject: r.subject,
       category: r.category,
-      image: r.image,
+      image: stageUrl(r.challenge_id, 5),
     }));
   }
 

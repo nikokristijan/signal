@@ -5,7 +5,8 @@ import path from "node:path";
 import sharp from "sharp";
 
 const root = new URL("..", import.meta.url).pathname;
-const defs = JSON.parse(await fs.readFile(path.join(root, "src/lib/data/challenges.json"), "utf8"));
+const only = process.argv.slice(4);
+const defs = JSON.parse(await fs.readFile(path.join(root, "src/lib/data/challenges.json"), "utf8")).filter((d) => !only.length || only.includes(d.slug));
 const out = process.argv[2] ?? "/tmp/signal-sheets";
 const perSheet = Number(process.argv[3] ?? 8);
 await fs.mkdir(out, { recursive: true });
@@ -16,7 +17,7 @@ for (let s = 0; s * perSheet < defs.length; s++) {
   const slice = defs.slice(s * perSheet, (s + 1) * perSheet);
   const composites = [];
   for (let r = 0; r < slice.length; r++) {
-    const label = Buffer.from(`<svg width="${TW * 5}" height="22"><rect width="${TW * 5}" height="22" fill="#111"/><text x="6" y="16" font-size="14" font-family="sans-serif" fill="#fff">${s * perSheet + r + 1}. ${slice[r].slug}</text></svg>`);
+    const label = Buffer.from(`<svg width="${TW * 5}" height="22"><rect width="${TW * 5}" height="22" fill="#111"/><text x="6" y="16" font-size="14" font-family="sans-serif" fill="#fff">${slice[r].slug}</text></svg>`);
     composites.push({ input: label, left: 0, top: r * (TH + 22) });
     for (let i = 0; i < 5; i++) {
       const f = path.join(root, "public/challenges", slice[r].slug, `stage-${i + 1}.webp`);

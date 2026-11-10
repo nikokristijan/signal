@@ -16,14 +16,22 @@ const OUT_H = 600;
 const MIN_SOURCE_PX = 520; // never crop tighter than this many source pixels wide
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// Wikimedia throttles originals hard (Retry-After: 600) but serves standard-size thumbnails freely,
+// so we fetch a 3840px thumbnail (sources must be wider than that; otherwise fall back to 1920px).
+function thumbUrl(def) {
+  const width = def.source.width > 3840 ? 3840 : 1920;
+  return def.source.url.replace(/\/commons\/([0-9a-f]\/[0-9a-f]{2})\/([^/]+)$/, `/commons/thumb/$1/$2/${width}px-$2`);
+}
+
 async function download(url, file) {
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < 12; i++) {
     const r = await fetch(url, { headers: { "User-Agent": UA } });
     if (r.ok) {
       await fs.writeFile(file, Buffer.from(await r.arrayBuffer()));
       return;
     }
     const wait = Math.max(Number(r.headers.get("retry-after")) || 0, 8 * (i + 1)) * 1000;
+    if (wait > 120_000) throw new Error(`rate limited for ${wait / 1000}s: ${url}`);
     console.error(`  ${r.status} - waiting ${wait / 1000}s`);
     await sleep(wait);
   }
@@ -41,7 +49,7 @@ for (const def of defs) {
   const cache = path.join(root, ".photo-cache", `${def.slug}.jpg`);
   if (!(await fs.stat(cache).catch(() => null))) {
     console.log("download", def.slug);
-    await download(def.source.url, cache);
+    await download(thumbUrl(def), cache);
     await sleep(3000);
   }
 

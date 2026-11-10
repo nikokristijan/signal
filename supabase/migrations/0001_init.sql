@@ -49,7 +49,9 @@ create table public.challenges (
   category      text not null,
   difficulty    text not null check (difficulty in ('easy', 'medium', 'hard')),
   fact          text not null,
-  stage_images  text[] not null check (array_length(stage_images, 1) = 5),  -- five crops of ONE photo
+  -- Storage paths in the private 'challenge-stages' bucket, e.g. 'sig-020/stage-1.webp' (opaque: never the subject name).
+  -- Five crops of ONE photo.
+  stage_images  text[] not null check (array_length(stage_images, 1) = 5),
   credit        jsonb not null default '{}'
 );
 
@@ -163,11 +165,12 @@ begin
   return c;
 end $$;
 
--- Public view of a day's challenge: never includes the answer.
+-- Public view of a day's challenge: never includes the answer or the image paths.
+-- Images are fetched through /api/stage, which signs a URL only for stages the player has revealed.
 create or replace function public.get_challenge(p_date date)
-returns table (id text, number int, publish_date date, stage_images text[])
+returns table (id text, number int, publish_date date)
 language sql stable security definer set search_path = public as $$
-  select c.id, c.number, c.publish_date, c.stage_images
+  select c.id, c.number, c.publish_date
   from public.challenges c
   where c.publish_date = p_date and p_date <= (now() at time zone 'utc')::date + 1
 $$;
@@ -288,10 +291,10 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 create or replace function public.get_history() returns table (
-  challenge_id text, publish_date date, number int, subject text, category text, image text,
+  challenge_id text, publish_date date, number int, subject text, category text,
   stage int, wrong_count int, status text, score int, solved_stage int, started_at timestamptz, finished_at timestamptz, guesses jsonb
 ) language sql stable security definer set search_path = public as $$
-  select a.challenge_id, c.publish_date, c.number, c.subject, c.category, c.stage_images[5],
+  select a.challenge_id, c.publish_date, c.number, c.subject, c.category,
          a.stage, a.wrong_count, a.status, a.score, a.solved_stage, a.started_at, a.finished_at, a.guesses
   from public.daily_attempts a join public.challenges c on c.id = a.challenge_id
   where a.user_id = auth.uid() and a.status <> 'playing'

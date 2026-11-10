@@ -18,8 +18,10 @@ console.log(
   defs
     .map((d, i) => {
       const n = i + 1;
-      const stages = [1, 2, 3, 4, 5].map((s) => `/challenges/${d.slug}/stage-${s}.webp`);
-      return `  (${q(`sig-${String(n).padStart(3, "0")}`)}, ${n}, ${q(dateFor(i))}, ${q(d.slug)}, ${q(d.subject)}, ${q(d.answer)}, ${arr(d.alternatives)}, ${arr(d.nudges)}, ${q(d.category)}, ${q(d.difficulty)}, ${q(d.fact)}, ${arr(stages)}, ${q(JSON.stringify(d.credit))}::jsonb)`;
+      const id = `sig-${String(n).padStart(3, "0")}`;
+      // opaque storage paths (never the subject name); upload with scripts/upload-stages.mjs
+      const stages = [1, 2, 3, 4, 5].map((s) => `${id}/stage-${s}.webp`);
+      return `  (${q(id)}, ${n}, ${q(dateFor(i))}, ${q(d.slug)}, ${q(d.subject)}, ${q(d.answer)}, ${arr(d.alternatives)}, ${arr(d.nudges)}, ${q(d.category)}, ${q(d.difficulty)}, ${q(d.fact)}, ${arr(stages)}, ${q(JSON.stringify(d.credit))}::jsonb)`;
     })
     .join(",\n") + "\non conflict (id) do nothing;",
 );
