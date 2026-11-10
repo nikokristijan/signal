@@ -263,16 +263,16 @@
       "y": 0.5
     },
     "source": {
-      "url": "https://upload.wikimedia.org/wikipedia/commons/6/63/Rubik%27s_cube_unfinished.jpg",
-      "width": 3648,
-      "height": 2736
+      "url": "https://upload.wikimedia.org/wikipedia/commons/e/e0/Speedcube_GAN.jpg",
+      "width": 6016,
+      "height": 4000
     },
     "credit": {
-      "title": "File:Rubik's cube unfinished.jpg",
-      "author": "Tarasna0922",
-      "license": "CC BY-SA 4.0",
-      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-      "page": "https://commons.wikimedia.org/wiki/File:Rubik%27s_cube_unfinished.jpg"
+      "title": "File:Speedcube GAN.jpg",
+      "author": "多多123",
+      "license": "CC BY 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Speedcube_GAN.jpg"
     }
   },
   {
@@ -531,6 +531,18 @@
     "focus": {
       "x": 0.5,
       "y": 0.5
+    },
+    "source": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f5/Hourglasses.jpg",
+      "width": 6566,
+      "height": 4377
+    },
+    "credit": {
+      "title": "File:Hourglasses.jpg",
+      "author": "Aaaatu",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Hourglasses.jpg"
     }
   },
   {
@@ -765,6 +777,18 @@
     "focus": {
       "x": 0.5,
       "y": 0.5
+    },
+    "source": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c1/Sushi_%2814931027625%29.jpg",
+      "width": 5322,
+      "height": 3548
+    },
+    "credit": {
+      "title": "File:Sushi (14931027625).jpg",
+      "author": "Tim Reckmann from Hamm, Deutschland",
+      "license": "CC BY 2.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Sushi_(14931027625).jpg"
     }
   },
   {
@@ -857,6 +881,18 @@
     "focus": {
       "x": 0.5,
       "y": 0.5
+    },
+    "source": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/c/c6/Lamp_with_lit_incandescent_light_bulb_and_black_background.jpg",
+      "width": 6000,
+      "height": 4000
+    },
+    "credit": {
+      "title": "File:Lamp with lit incandescent light bulb and black background.jpg",
+      "author": "Basile Morin",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Lamp_with_lit_incandescent_light_bulb_and_black_background.jpg"
     }
   },
   {
@@ -881,6 +917,18 @@
     "focus": {
       "x": 0.5,
       "y": 0.5
+    },
+    "source": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Yamanakako_-_Yamanaka6757.jpg",
+      "width": 5184,
+      "height": 3456
+    },
+    "credit": {
+      "title": "File:Yamanakako - Yamanaka6757.jpg",
+      "author": "lumoplank",
+      "license": "CC0",
+      "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "page": "https://commons.wikimedia.org/wiki/File:Yamanakako_-_Yamanaka6757.jpg"
     }
   },
   {
@@ -901,6 +949,18 @@
     "focus": {
       "x": 0.5,
       "y": 0.5
+    },
+    "source": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/a/a4/Black_umbrella.jpg",
+      "width": 4608,
+      "height": 2592
+    },
+    "credit": {
+      "title": "File:Black umbrella.jpg",
+      "author": "Janakiraman janaki",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Black_umbrella.jpg"
     }
   },
   {
@@ -1015,6 +1075,18 @@
     "focus": {
       "x": 0.5,
       "y": 0.5
+    },
+    "source": {
+      "url": "https://upload.wikimedia.org/wikipedia/commons/7/7a/Ruota_del_Timone_%28Ship%27s_wheel%29_con_Quadro_di_Comando_-_Mostra_istituzionale_della_Marina_Militare_%282008%29_-_Villa_Genoese_Zerbi_%28Reggio_Calabria%29_-_Italy_-_%287%29.jpg",
+      "width": 4000,
+      "height": 3000
+    },
+    "credit": {
+      "title": "File:Ruota del Timone (Ship's wheel) con Quadro di Comando - Mostra istituzionale della Marina Militare (2008) - Villa Genoese Zerbi (Reggio Calabria) - Italy - (7).jpg",
+      "author": "Jacopo Werther",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "page": "https://commons.wikimedia.org/wiki/File:Ruota_del_Timone_(Ship%27s_wheel)_con_Quadro_di_Comando_-_Mostra_istituzionale_della_Marina_Militare_(2008)_-_Villa_Genoese_Zerbi_(Reggio_Calabria)_-_Italy_-_(7).jpg"
     }
   }
 ]

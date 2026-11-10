@@ -41,7 +41,8 @@ export default function PlayPage() {
       <div className="mb-4">
         <StageProgress stage={attempt.stage} />
       </div>
-      <ZoomImage stages={challenge.stages} stage={attempt.stage} celebrate={solved} />
+      {/* Once the game is over (solved or given up) the whole photograph is shown. */}
+      <ZoomImage stages={challenge.stages} stage={playing ? attempt.stage : challenge.stages.length} celebrate={solved} />
       {playing ? (
         <GuessForm key={challenge.id} attempt={attempt} onGuess={guess} onReveal={revealNext} onGiveUp={giveUp} />
       ) : (
