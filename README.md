@@ -44,7 +44,7 @@ Dodaju se po **korisničkom imenu** ili preko **linka** `/pozivnica/ime` (strani
 ```bash
 npm install
 npm run dev        # http://localhost:3000
-npm test           # vitest (147 testova)
+npm test           # vitest (161 test)
 npm run lint       # provjera tipova
 npm run build
 ```
@@ -140,17 +140,18 @@ tests/                    vitest
 * **dvije lige:** odvojene ljestvice, niz dana samo za dnevnu, seed treninga određuje server, zapis za pogrešnu ligu ili „čudan" seed se odbija,
 * **`/api/status`:** demo / spojeno / koja migracija nedostaje (bez tajni u odgovoru),
 * **SQL na pravom Postgresu (PGlite):** migracija, okidač za profil, **RLS** (igrač ne može upisati ni promijeniti rezultat), `bomba_record_result` samo za `service_role`, nizovi, ljestvice, prijatelji,
-* **API rute `/api/igra/*`** s pravom bazom: idempotentnost, odbijanje, brojač pokušaja, provjera proteklog vremena, razdvojenost igrača.
+* **API rute `/api/igra/*`** s pravom bazom: idempotentnost, odbijanje, brojač pokušaja, provjera proteklog vremena, razdvojenost igrača,
+* **`SupabaseRepository` → API rute → baza** (dva igrača, svaki sa svojim klijentom): anonimna prijava i profil, korisničko ime, **dodavanje/uklanjanje prijatelja**, duhovi, ljestvice obje lige, najbolja partija umjesto zadnje, RLS iz klijenta. Lažan je samo transport prema Supabaseu (PostgREST/Auth).
 
 Uz to je cijeli tok prošao u pravom pregledniku (Playwright, mobilna i desktop veličina): stvarna partija s eksplozijama, krivi unosi, combo, duhovi i „Prestigao si…", refresh usred partije, eksplozija dok te nema, ljestvice, statistika, prijatelji, pozivnica, trening.
 
 ## Što je gotovo, a što nije
 
-**Provjereno:** sva pravila igre, rječnik, generator slogova, server replay, SQL shema i RLS (PGlite), API rute (PGlite + zamijenjen Supabase klijent), cijeli tok u pregledniku (lokalni demo), produkcijski build.
+**Provjereno:** sva pravila igre, rječnik, generator slogova, server replay, SQL shema i RLS (PGlite), `SupabaseRepository` i API rute (PGlite + zamijenjen samo transport prema Supabaseu), cijeli tok u pregledniku (lokalni demo), produkcijski build.
 
 **Nije provjereno** (u razvojnom okruženju nije bilo Supabase projekta, Vercela ni uređaja):
-* `SupabaseRepository`, stvarna **anonimna prijava**, čitanje sesije iz cookieja u API rutama (`@supabase/ssr`) i povezivanje e-maila: napisano prema dokumentaciji, ali **nikad pokrenuto protiv pravog Supabasea**. Isprobaj cijeli tok na praznom projektu prije lansiranja.
-* **Deploy na Vercel** nije napravljen.
+* **Pravi Supabase:** logika adaptera, API ruta i baze je testirana, ali **stvarna anonimna prijava** (uključi je u Authentication → Sign In / Providers), čitanje sesije iz cookieja u API rutama (`@supabase/ssr`) i povezivanje e-maila nikad nisu pokrenuti protiv pravog projekta. Isprobaj cijeli tok na praznom projektu prije lansiranja.
+* **Deploy na Vercel:** Vercel javlja uspješan deploy, ali živu stranicu nisam mogao otvoriti iz razvojnog okruženja.
 * **Zvuk** (Web Audio) i **vibracija**: kod radi bez grešaka u pregledniku, ali zvuk nisam mogao čuti, a vibracija ne postoji u emulaciji.
 * **Pravi mobiteli** (iOS Safari/Android Chrome): ponašanje tipkovnice i fokusa provjereno samo u emuliranom Chromiumu. Input se nikad ne uklanja iz DOM-a niti onemogućuje, da tipkovnica ostane otvorena, ali to treba vidjeti na uređaju.
 * Ako se partija započne na jednom uređaju i napredak se izgubi (npr. brisanje podataka preglednika), ta se nezavršena partija odbacuje i počinje nova. Nema serverskog checkpointa partije.
